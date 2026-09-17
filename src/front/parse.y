@@ -61,6 +61,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %token <str> IDENT NUMBER
 %token K_MODULE K_ENDMODULE
 %token K_INPUT K_OUTPUT K_INOUT K_WIRE K_REG
+%token K_PARAMETER K_INTEGER
 %token K_ASSIGN K_ALWAYS K_INITIAL K_BEGIN K_END
 %token K_IF K_ELSE K_POSEDGE K_NEGEDGE K_OR
 %token LTEQ GTEQ EQEQ NEQ LAND LOR NAND NOR XNOR

@@ -60,6 +60,8 @@
 "inout"                   { return K_INOUT; }
 "wire"                    { return K_WIRE; }
 "reg"                     { return K_REG; }
+"parameter"               { return K_PARAMETER; }
+"integer"                 { return K_INTEGER; }
 "assign"                  { return K_ASSIGN; }
 "always"                  { return K_ALWAYS; }
 "initial"                 { return K_INITIAL; }

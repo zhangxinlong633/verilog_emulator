@@ -360,6 +360,11 @@ void vs_dump_ast(FILE *out, const vs_design_t *design) {
     for (const vs_module_t *m = design->modules; m; m = (const vs_module_t *)m->base.next) {
         dump_indent(out, 1);
         fprintf(out, "module %s\n", m->name ? m->name : "");
+        for (const vs_param_decl_t *p = m->params; p; p = (const vs_param_decl_t *)p->base.next) {
+            dump_indent(out, 2);
+            fprintf(out, "param %s\n", p->name ? p->name : "");
+            dump_expr(out, p->value, 3);
+        }
         for (const vs_port_t *p = m->ports; p; p = (const vs_port_t *)p->base.next) {
             dump_indent(out, 2);
             fprintf(out, "port %s %s\n", dir_name(p->dir), p->name ? p->name : "");

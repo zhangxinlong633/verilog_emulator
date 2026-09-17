@@ -13,6 +13,7 @@ typedef enum vs_node_kind {
     VS_PORT_DECL,
     VS_NET_DECL,
     VS_REG_DECL,
+    VS_PARAM_DECL,
     VS_RANGE,
     VS_CONT_ASSIGN,
     VS_ALWAYS,
@@ -104,9 +105,12 @@ struct vs_design {
     const vs_anno_set_t *annos; /* optional // @vs metadata */
 };
 
+typedef struct vs_param_decl vs_param_decl_t;
+
 struct vs_module {
     vs_node_t base;
     const char *name;
+    vs_param_decl_t *params;
     vs_port_t *ports;
     vs_item_t *items;
 };
@@ -156,6 +160,12 @@ typedef struct vs_reg_decl {
     vs_range_t *range;
     vs_expr_t *names;
 } vs_reg_decl_t;
+
+struct vs_param_decl {
+    vs_node_t base;
+    const char *name;
+    vs_expr_t *value;
+};
 
 typedef struct vs_cont_assign {
     vs_node_t base;
@@ -254,6 +264,7 @@ vs_design_t *vs_design_new(vs_arena_t *a);
 void vs_design_add_module(vs_design_t *d, vs_module_t *m);
 
 vs_module_t *vs_module_new(vs_arena_t *a, vs_loc_t loc, const char *name);
+void vs_module_add_param(vs_module_t *m, vs_param_decl_t *p);
 void vs_module_add_port(vs_module_t *m, vs_port_t *p);
 void vs_module_add_item(vs_module_t *m, vs_item_t *it);
 
@@ -265,6 +276,7 @@ vs_port_decl_t *vs_port_decl_new(vs_arena_t *a, vs_loc_t loc, vs_port_dir_t dir,
                                  vs_expr_t *names);
 vs_net_decl_t *vs_net_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names);
 vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names);
+vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *value);
 vs_cont_assign_t *vs_cont_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs, vs_expr_t *rhs);
 
 vs_always_t *vs_always_new(vs_arena_t *a, vs_loc_t loc, vs_node_t *event, vs_stmt_t *stmt);

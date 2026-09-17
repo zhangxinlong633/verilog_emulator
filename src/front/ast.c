@@ -49,7 +49,15 @@ vs_module_t *vs_module_new(vs_arena_t *a, vs_loc_t loc, const char *name) {
         return NULL;
     }
     m->name = name;
+    m->params = NULL;
     return m;
+}
+
+void vs_module_add_param(vs_module_t *m, vs_param_decl_t *p) {
+    if (!m || !p) {
+        return;
+    }
+    vs_node_list_append((vs_node_t **)&m->params, (vs_node_t *)p);
 }
 
 void vs_module_add_port(vs_module_t *m, vs_port_t *p) {
@@ -117,6 +125,16 @@ vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, v
     }
     d->range = range;
     d->names = names;
+    return d;
+}
+
+vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *value) {
+    vs_param_decl_t *d = vs_node_alloc(a, sizeof(*d), VS_PARAM_DECL, loc);
+    if (!d) {
+        return NULL;
+    }
+    d->name = name;
+    d->value = value;
     return d;
 }
 
