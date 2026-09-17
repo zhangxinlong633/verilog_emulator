@@ -110,6 +110,14 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
 
 add_test(
+  NAME parse.ok.inst_gemm
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/inst_gemm.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/inst_gemm.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
   NAME parse.fail.missing_endmodule
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
