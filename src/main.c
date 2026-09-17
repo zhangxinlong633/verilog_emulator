@@ -19,7 +19,7 @@
 static void usage(FILE *out) {
     fprintf(out,
             "Usage:\n"
-            "  vs run <file.v> [options]\n"
+            "  vs run <file.v>... [options]\n"
             "  vs [--dump-ast|--dump-tokens] <file.v>...\n"
             "\n"
             "Run options:\n"
@@ -87,7 +87,8 @@ static int anno_lookup_param(void *ctx, const char *name, int64_t *out) {
 }
 
 static int cmd_run(int argc, char **argv) {
-    const char *file = NULL;
+    char *paths[16];
+    int npaths = 0;
     int threads = default_threads();
     unsigned long long until = 200;
     const char *trace = NULL;
@@ -182,12 +183,14 @@ static int cmd_run(int argc, char **argv) {
             fprintf(stderr, "vs: unknown run option %s\n", argv[i]);
             return 2;
         }
-        if (!file) {
-            file = argv[i];
+        if (npaths >= 16) {
+            fprintf(stderr, "vs: too many .v files (max 16)\n");
+            return 2;
         }
+        paths[npaths++] = argv[i];
     }
 
-    if (!file) {
+    if (npaths < 1) {
         fprintf(stderr, "vs: run requires a .v file\n");
         usage(stderr);
         return 2;
@@ -207,14 +210,13 @@ static int cmd_run(int argc, char **argv) {
         return 2;
     }
 
-    char *paths[1] = {(char *)file};
     vs_design_t *design = NULL;
-    if (vs_parse_files(arena, strtab, diag, 1, paths, &design)) {
+    if (vs_parse_files(arena, strtab, diag, npaths, paths, &design)) {
         vs_diag_print_all(diag, stderr);
         vs_arena_destroy(arena);
         return 1;
     }
-    design->annos = vs_anno_scan_file(arena, diag, file);
+    design->annos = vs_anno_scan_file(arena, diag, paths[0]);
 
     vs_netlist_t *nl = vs_elab_flat(arena, diag, design);
     if (!nl) {
