@@ -17,6 +17,7 @@
 | 怎么写解析测试 | [testing.md](testing.md) |
 | 版本阶段规划 | [roadmap.md](roadmap.md) |
 | 如何新增一条语法 | [contributing-syntax.md](contributing-syntax.md) |
+| `@vs` 类型化视图（矩阵等） | [superpowers/specs/2026-09-17-typed-views-anno-design.md](superpowers/specs/2026-09-17-typed-views-anno-design.md) |
 
 ## 示例源码
 

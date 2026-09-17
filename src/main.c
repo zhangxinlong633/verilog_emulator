@@ -1,3 +1,4 @@
+#include "vs/anno.h"
 #include "vs/arena.h"
 #include "vs/ast.h"
 #include "vs/diag.h"
@@ -208,6 +209,7 @@ static int cmd_run(int argc, char **argv) {
         vs_arena_destroy(arena);
         return 1;
     }
+    design->annos = vs_anno_scan_file(arena, diag, file);
 
     vs_netlist_t *nl = vs_elab_flat(arena, diag, design);
     if (!nl) {

@@ -31,12 +31,15 @@ typedef struct vs_process {
     vs_expr_t *rhs;
 } vs_process_t;
 
+typedef struct vs_anno_set vs_anno_set_t;
+
 typedef struct vs_netlist {
     const char *module_name;
     vs_signal_t *sigs;
     int nsigs;
     vs_process_t *procs;
     int nprocs;
+    const vs_anno_set_t *annos; /* from design; may be NULL */
 } vs_netlist_t;
 
 /* Elaborate first module in design (flat). Returns NULL on error. */

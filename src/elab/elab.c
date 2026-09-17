@@ -137,6 +137,7 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
     const vs_module_t *m = design->modules;
     vs_netlist_t *nl = vs_arena_alloc(arena, sizeof(*nl));
     nl->module_name = m->name;
+    nl->annos = design->annos;
 
     for (const vs_port_t *p = m->ports; p; p = (const vs_port_t *)p->base.next) {
         int is_reg = (p->dir == VS_DIR_OUTPUT);

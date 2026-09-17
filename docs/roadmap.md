@@ -22,6 +22,7 @@
 - [x] 事件调度 + NBA + pthread 工作池（`--threads`）
 - [x] `--trace` JSONL、`--clock` / `--reset` / `--watch`、`-v`
 - [x] `tools/vs-view`（**TypeScript**）时间线 + 精简波形
+- [x] `// @vs` 注解 → meta `views`/`ops`/`exprs` + vs-view 矩阵 Typed views
 - [x] 确定性测试：threads 1 vs 4 最终 watch 一致
 
 **完成标准：** counter 可 `vs run`；Node UI 可查看 trace。 — **已达到**

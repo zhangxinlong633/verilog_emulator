@@ -1,3 +1,18 @@
+type MatrixView = {
+  kind: string;
+  name: string;
+  rows: number;
+  cols: number;
+  cells: string[][];
+};
+
+type ViewOp = {
+  kind: string;
+  out: string;
+  left: string;
+  right: string;
+};
+
 type TraceEvent = {
   t: number;
   d: number;
@@ -31,6 +46,9 @@ type TracePayload = {
   module?: string;
   ports?: PortInfo[];
   procs?: ProcInfo[];
+  views?: MatrixView[];
+  ops?: ViewOp[];
+  exprs?: Record<string, string>;
   maxT: number;
 };
 
@@ -42,6 +60,94 @@ function valueAt(waves: Record<string, { t: number; v: string }[]>, sig: string,
     else break;
   }
   return v;
+}
+
+function expandExpr(data: TracePayload, sig: string, t: number): string {
+  const cell = valueAt(data.waves, sig, t);
+  const raw = data.exprs?.[sig];
+  if (!raw) {
+    return `${sig} = ${cell}`;
+  }
+  const substituted = raw.replace(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g, (id) => {
+    if (data.waves[id]) {
+      return valueAt(data.waves, id, t);
+    }
+    return id;
+  });
+  return `${substituted} = ${cell}`;
+}
+
+function matrixHtml(data: TracePayload, view: MatrixView, t: number): string {
+  const rows = view.cells
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((sig) => {
+            const val = valueAt(data.waves, sig, t);
+            return `<td><button type="button" class="mcell" data-sig="${sig}" title="${sig}">${val}</button></td>`;
+          })
+          .join("")}</tr>`,
+    )
+    .join("");
+  return `<div class="matrix" data-name="${view.name}">
+    <div class="matrix-title">${view.name}</div>
+    <table><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
+function renderTypedViews(data: TracePayload, t: number): void {
+  const root = document.getElementById("typed-views");
+  const expand = document.getElementById("expr-expand");
+  if (!root) return;
+
+  const views = data.views || [];
+  if (!views.length) {
+    root.hidden = true;
+    root.innerHTML = "";
+    if (expand) {
+      expand.hidden = true;
+      expand.textContent = "";
+    }
+    return;
+  }
+  root.hidden = false;
+
+  const byName = new Map(views.map((v) => [v.name, v]));
+  const used = new Set<string>();
+  const parts: string[] = [];
+
+  for (const op of data.ops || []) {
+    if (op.kind !== "matmul") continue;
+    const left = byName.get(op.left);
+    const right = byName.get(op.right);
+    const out = byName.get(op.out);
+    if (!left || !right || !out) continue;
+    used.add(left.name);
+    used.add(right.name);
+    used.add(out.name);
+    parts.push(`<div class="matmul-row">
+      ${matrixHtml(data, left, t)}
+      <span class="op-sym">×</span>
+      ${matrixHtml(data, right, t)}
+      <span class="op-sym">=</span>
+      ${matrixHtml(data, out, t)}
+    </div>`);
+  }
+
+  for (const v of views) {
+    if (used.has(v.name)) continue;
+    parts.push(matrixHtml(data, v, t));
+  }
+
+  root.innerHTML = `<h3>Typed views</h3>${parts.join("")}`;
+  root.querySelectorAll(".mcell").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sig = (btn as HTMLElement).dataset.sig;
+      if (!sig || !expand) return;
+      expand.hidden = false;
+      expand.textContent = expandExpr(data, sig, t);
+    });
+  });
 }
 
 function renderModule(data: TracePayload, t: number): void {
@@ -182,6 +288,7 @@ async function main(): Promise<void> {
     const t = Number(timeInput.value);
     timeLabel.textContent = String(t);
     renderModule(data, t);
+    renderTypedViews(data, t);
     renderTimeline(data, t);
     renderWaves(data, t);
   };

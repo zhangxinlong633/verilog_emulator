@@ -96,9 +96,12 @@ struct vs_node {
     vs_node_t *next;
 };
 
+typedef struct vs_anno_set vs_anno_set_t;
+
 struct vs_design {
     vs_node_t base;
     vs_module_t *modules; /* linked via base.next cast */
+    const vs_anno_set_t *annos; /* optional // @vs metadata */
 };
 
 struct vs_module {

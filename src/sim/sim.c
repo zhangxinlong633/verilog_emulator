@@ -1,3 +1,4 @@
+#include "vs/anno.h"
 #include "vs/sim.h"
 
 #include <pthread.h>
@@ -558,10 +559,18 @@ static void trace_meta(vs_sim_t *sim) {
     }
     snprintf(procs + po, sizeof procs - po, "]");
 
-    char line[4096];
+    char anno_buf[12288];
+    size_t anno_off = 0;
+    anno_buf[0] = '\0';
+    if (vs_anno_append_meta_json(anno_buf, sizeof anno_buf, &anno_off, sim->nl->annos) != 0) {
+        /* keep going with truncated / empty anno fragment */
+        anno_buf[0] = '\0';
+    }
+
+    char line[16384];
     snprintf(line, sizeof line,
-             "{\"t\":0,\"d\":0,\"tid\":0,\"op\":\"meta\",\"module\":\"%s\",\"ports\":%s,\"procs\":%s}\n",
-             sim->nl->module_name ? sim->nl->module_name : "top", ports, procs);
+             "{\"t\":0,\"d\":0,\"tid\":0,\"op\":\"meta\",\"module\":\"%s\",\"ports\":%s,\"procs\":%s%s}\n",
+             sim->nl->module_name ? sim->nl->module_name : "top", ports, procs, anno_buf);
     if (sim->verbose) {
         fputs(line, stderr);
     }

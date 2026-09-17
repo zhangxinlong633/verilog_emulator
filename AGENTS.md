@@ -26,6 +26,7 @@
 - 演示：`examples/*.v` + 更新 `examples/README.md`。
 - 回归：`tests/parse` 或 `tests/sim`；仿真测试的 `SRC` 指向 `examples/`。
 - 文档里的命令路径一律写 `examples/...`，不要写 `docs/examples/...`。
+- 业务语义展示用 `// @vs view|op|expr` 写在示例源码里；由 C 预扫描进 `meta`，vs-view 渲染。不要把展示类型硬编码进 UI。
 
 ## 代码风格（摘要）
 

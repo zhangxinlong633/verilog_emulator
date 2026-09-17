@@ -15,6 +15,21 @@ export type ProcInfo = {
   kind: string;
 };
 
+export type MatrixView = {
+  kind: string;
+  name: string;
+  rows: number;
+  cols: number;
+  cells: string[][];
+};
+
+export type ViewOp = {
+  kind: string;
+  out: string;
+  left: string;
+  right: string;
+};
+
 export type TraceEvent = {
   t: number;
   d: number;
@@ -27,6 +42,9 @@ export type TraceEvent = {
   module?: string;
   ports?: PortInfo[];
   procs?: ProcInfo[];
+  views?: MatrixView[];
+  ops?: ViewOp[];
+  exprs?: Record<string, string>;
 };
 
 function parseArgs(argv: string[]): { trace: string; port: number } {
@@ -117,6 +135,9 @@ const server = http.createServer((req, res) => {
         module: meta?.module ?? "module",
         ports: meta?.ports ?? [],
         procs: meta?.procs ?? [],
+        views: meta?.views ?? [],
+        ops: meta?.ops ?? [],
+        exprs: meta?.exprs ?? {},
         maxT,
       });
       res.writeHead(200, {

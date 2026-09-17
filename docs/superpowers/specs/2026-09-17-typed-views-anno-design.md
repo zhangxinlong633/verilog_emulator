@@ -1,7 +1,7 @@
 # Design: Typed views via `// @vs` annotations
 
 Date: 2026-09-17  
-Status: draft (awaiting user review)  
+Status: implemented  
 Related: `docs/superpowers/specs/2026-09-17-mt-sim-trace-view-design.md`
 
 ## Goal

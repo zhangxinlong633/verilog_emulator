@@ -129,3 +129,11 @@ add_test(
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/examples/matmul2x2.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_matmul.cmake)
+
+add_test(
+  NAME sim.meta_views
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/inv_anno.v
+    -DTRACE=${CMAKE_BINARY_DIR}/trace_meta_views.jsonl
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_views.cmake)
