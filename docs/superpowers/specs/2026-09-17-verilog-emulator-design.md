@@ -1,7 +1,7 @@
 # Design: vs — Verilog Simulator
 
 **Date:** 2026-09-17  
-**Status:** Approved for documentation; awaiting user review before implementation plan  
+**Status:** Spec written; awaiting user review before implementation plan  
 **Program name:** `vs` (Verilog Simulator)
 
 ## 1. Goals
