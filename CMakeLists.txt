@@ -173,6 +173,7 @@ add_test(
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/examples/npu_transformer.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_npu_transformer.cmake)
 
 add_test(
@@ -180,6 +181,7 @@ add_test(
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/examples/npu_transformer.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
     -DTRACE=${CMAKE_BINARY_DIR}/trace_meta_npu.jsonl
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_npu.cmake)
 

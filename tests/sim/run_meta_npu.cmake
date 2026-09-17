@@ -1,10 +1,14 @@
-# Expects: VS, SRC, TRACE
-if(NOT VS OR NOT SRC OR NOT TRACE)
-  message(FATAL_ERROR "VS, SRC, TRACE required")
+# Expects: VS, SRC, BLAS_DIR, TRACE
+if(NOT VS OR NOT SRC OR NOT TRACE OR NOT BLAS_DIR)
+  message(FATAL_ERROR "VS, SRC, BLAS_DIR, TRACE required")
 endif()
 
 execute_process(
   COMMAND ${VS} run ${SRC}
+          ${BLAS_DIR}/gemm.v
+          ${BLAS_DIR}/gemm_bt.v
+          ${BLAS_DIR}/relu.v
+          ${BLAS_DIR}/row_argmax.v
           --threads 1 --until 400
           --clock clk=10 --reset rst=20
           --force x_0_0=1 --force x_0_1=2 --force x_1_0=3 --force x_1_1=4

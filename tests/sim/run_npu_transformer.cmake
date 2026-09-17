@@ -4,10 +4,17 @@ endif()
 if(NOT SRC)
   message(FATAL_ERROR "SRC required")
 endif()
+if(NOT BLAS_DIR)
+  message(FATAL_ERROR "BLAS_DIR required")
+endif()
 
 execute_process(
   COMMAND "${VS}" run "${SRC}"
-          --threads 2
+          "${BLAS_DIR}/gemm.v"
+          "${BLAS_DIR}/gemm_bt.v"
+          "${BLAS_DIR}/relu.v"
+          "${BLAS_DIR}/row_argmax.v"
+          --threads 1
           --until 400
           --clock clk=10
           --reset rst=20

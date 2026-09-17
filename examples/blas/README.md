@@ -10,7 +10,8 @@ Instantiate with named ports; connect whole 2D arrays by identifier.
 | `relu.v` | `blas_relu` | elementwise ReLU (clear if MSB set) |
 | `row_argmax.v` | `blas_row_argmax` | row-wise one-hot argmax (lowest index on ties) |
 
-Output packed width is `CW` (default `32`). For a matmul-style 2×W product width, override `#(.CW(16))` when `W=8`.
+Packed widths: `WA`/`WB` for inputs (default 8), `CW` for gemm outputs (default 32).
+ReLU / argmax use a single `W` (default 32).
 
 Run gemm alone (it is the top when listed first):
 

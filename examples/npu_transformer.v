@@ -1,4 +1,5 @@
 // Toy NPU: single-layer Transformer with hard attention + FFN/ReLU.
+// FSM top; math leaves live in examples/blas/*.v (pass those files after this one).
 // Defaults T=D=HF=2, W=8.
 //
 // Golden (Wq=Wk=Wv=W1=W2 = I):
@@ -39,10 +40,46 @@ module npu_transformer #(
   output reg [31:0] h [0:T-1][0:HF-1],
   output reg [31:0] y [0:T-1][0:D-1]
 );
-  integer i, j, kk, best_j;
-  reg [31:0] best;
-  reg [31:0] acc;
+  integer i, j;
   reg started;
+
+  wire [31:0] q_w [0:T-1][0:D-1];
+  wire [31:0] k_w [0:T-1][0:D-1];
+  wire [31:0] v_w [0:T-1][0:D-1];
+  wire [31:0] s_w [0:T-1][0:T-1];
+  wire [31:0] a_w [0:T-1][0:T-1];
+  wire [31:0] o_w [0:T-1][0:D-1];
+  wire [31:0] h_pre_w [0:T-1][0:HF-1];
+  wire [31:0] h_w [0:T-1][0:HF-1];
+  wire [31:0] y_w [0:T-1][0:D-1];
+
+  blas_gemm #(.N(T), .K(D), .M(D), .WA(W), .WB(W), .CW(32)) u_q (
+    .a(x), .b(wq), .c(q_w)
+  );
+  blas_gemm #(.N(T), .K(D), .M(D), .WA(W), .WB(W), .CW(32)) u_k (
+    .a(x), .b(wk), .c(k_w)
+  );
+  blas_gemm #(.N(T), .K(D), .M(D), .WA(W), .WB(W), .CW(32)) u_v (
+    .a(x), .b(wv), .c(v_w)
+  );
+  blas_gemm_bt #(.N(T), .K(D), .M(T), .WA(32), .WB(32), .CW(32)) u_s (
+    .a(q), .b(k), .c(s_w)
+  );
+  blas_row_argmax #(.T(T), .W(32)) u_a (
+    .s(s), .a(a_w)
+  );
+  blas_gemm #(.N(T), .K(T), .M(D), .WA(32), .WB(32), .CW(32)) u_o (
+    .a(a), .b(v), .c(o_w)
+  );
+  blas_gemm #(.N(T), .K(D), .M(HF), .WA(32), .WB(W), .CW(32)) u_h (
+    .a(o), .b(w1), .c(h_pre_w)
+  );
+  blas_relu #(.N(T), .M(HF), .W(32)) u_relu (
+    .x(h), .y(h_w)
+  );
+  blas_gemm #(.N(T), .K(HF), .M(D), .WA(32), .WB(W), .CW(32)) u_y (
+    .a(h), .b(w2), .c(y_w)
+  );
 
   always @(posedge clk) begin
     if (rst) begin
@@ -54,90 +91,42 @@ module npu_transformer #(
       phase <= 4'd1;
       done <= 1'b0;
     end else if (phase == 4'd1) begin
-      // QKV: Q=X·Wq, K=X·Wk, V=X·Wv
       for (i = 0; i < T; i = i + 1)
         for (j = 0; j < D; j = j + 1) begin
-          acc = 0;
-          for (kk = 0; kk < D; kk = kk + 1)
-            acc = acc + x[i][kk] * wq[kk][j];
-          q[i][j] = acc;
-          acc = 0;
-          for (kk = 0; kk < D; kk = kk + 1)
-            acc = acc + x[i][kk] * wk[kk][j];
-          k[i][j] = acc;
-          acc = 0;
-          for (kk = 0; kk < D; kk = kk + 1)
-            acc = acc + x[i][kk] * wv[kk][j];
-          v[i][j] = acc;
+          q[i][j] = q_w[i][j];
+          k[i][j] = k_w[i][j];
+          v[i][j] = v_w[i][j];
         end
       phase <= 4'd2;
     end else if (phase == 4'd2) begin
-      // S = Q · K^T  => s[i][j] = sum_kk q[i][kk]*k[j][kk]
       for (i = 0; i < T; i = i + 1)
-        for (j = 0; j < T; j = j + 1) begin
-          acc = 0;
-          for (kk = 0; kk < D; kk = kk + 1)
-            acc = acc + q[i][kk] * k[j][kk];
-          s[i][j] = acc;
-        end
+        for (j = 0; j < T; j = j + 1)
+          s[i][j] = s_w[i][j];
       phase <= 4'd3;
     end else if (phase == 4'd3) begin
-      // Hard attention: row argmax → one-hot A (lowest index on ties)
-      for (i = 0; i < T; i = i + 1) begin
-        best = s[i][0];
-        best_j = 0;
-        for (j = 1; j < T; j = j + 1) begin
-          if (s[i][j] > best) begin
-            best = s[i][j];
-            best_j = j;
-          end
-        end
-        for (j = 0; j < T; j = j + 1) begin
-          if (j == best_j)
-            a[i][j] = 1;
-          else
-            a[i][j] = 0;
-        end
-      end
+      for (i = 0; i < T; i = i + 1)
+        for (j = 0; j < T; j = j + 1)
+          a[i][j] = a_w[i][j];
       phase <= 4'd4;
     end else if (phase == 4'd4) begin
-      // O = A · V
       for (i = 0; i < T; i = i + 1)
-        for (j = 0; j < D; j = j + 1) begin
-          acc = 0;
-          for (kk = 0; kk < T; kk = kk + 1)
-            acc = acc + a[i][kk] * v[kk][j];
-          o[i][j] = acc;
-        end
+        for (j = 0; j < D; j = j + 1)
+          o[i][j] = o_w[i][j];
       phase <= 4'd5;
     end else if (phase == 4'd5) begin
-      // H = O · W1
       for (i = 0; i < T; i = i + 1)
-        for (j = 0; j < HF; j = j + 1) begin
-          acc = 0;
-          for (kk = 0; kk < D; kk = kk + 1)
-            acc = acc + o[i][kk] * w1[kk][j];
-          h[i][j] = acc;
-        end
+        for (j = 0; j < HF; j = j + 1)
+          h[i][j] = h_pre_w[i][j];
       phase <= 4'd6;
     end else if (phase == 4'd6) begin
-      // ReLU (MSB of 32-bit two's complement)
       for (i = 0; i < T; i = i + 1)
-        for (j = 0; j < HF; j = j + 1) begin
-          acc = h[i][j];
-          if (acc[31] == 1'b1)
-            h[i][j] = 0;
-        end
+        for (j = 0; j < HF; j = j + 1)
+          h[i][j] = h_w[i][j];
       phase <= 4'd7;
     end else if (phase == 4'd7) begin
-      // Y = H · W2
       for (i = 0; i < T; i = i + 1)
-        for (j = 0; j < D; j = j + 1) begin
-          acc = 0;
-          for (kk = 0; kk < HF; kk = kk + 1)
-            acc = acc + h[i][kk] * w2[kk][j];
-          y[i][j] = acc;
-        end
+        for (j = 0; j < D; j = j + 1)
+          y[i][j] = y_w[i][j];
       done <= 1'b1;
       phase <= 4'd8;
     end
