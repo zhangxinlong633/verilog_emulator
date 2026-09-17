@@ -78,6 +78,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %type <expr> expr expr_list name_list lvalue
 %type <stmt> statement statement_list for_assign
 %type <node> event_control event_expr_list event_expr_term
+%type <node> named_conn_list named_conn inst_param_override_opt
 
 %left LOR
 %left LAND
@@ -243,6 +244,35 @@ module_item
         { $$ = (vs_item_t *)vs_always_new(ctx->arena, loc_of(ctx, &@$), NULL, $2); }
     | K_INITIAL statement
         { $$ = (vs_item_t *)vs_initial_new(ctx->arena, loc_of(ctx, &@$), $2); }
+    | IDENT inst_param_override_opt IDENT '(' named_conn_list ')' ';'
+        {
+            $$ = (vs_item_t *)vs_instance_new(ctx->arena, loc_of(ctx, &@$), $1, $3,
+                                             (vs_named_conn_t *)$2, (vs_named_conn_t *)$5);
+        }
+    | IDENT inst_param_override_opt IDENT '(' ')' ';'
+        {
+            $$ = (vs_item_t *)vs_instance_new(ctx->arena, loc_of(ctx, &@$), $1, $3,
+                                             (vs_named_conn_t *)$2, NULL);
+        }
+    ;
+
+inst_param_override_opt
+    : /* empty */ { $$ = NULL; }
+    | '#' '(' named_conn_list ')' { $$ = $3; }
+    ;
+
+named_conn_list
+    : named_conn { $$ = $1; }
+    | named_conn_list ',' named_conn
+        {
+            vs_node_list_append(&$1, $3);
+            $$ = $1;
+        }
+    ;
+
+named_conn
+    : '.' IDENT '(' expr ')'
+        { $$ = (vs_node_t *)vs_named_conn_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
     ;
 
 range_opt

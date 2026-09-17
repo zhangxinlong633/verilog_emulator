@@ -364,6 +364,23 @@ static void dump_item(FILE *out, const vs_item_t *it, int depth) {
         dump_expr(out, n->rhs, depth + 2);
         break;
     }
+    case VS_INSTANCE: {
+        const vs_instance_t *n = (const vs_instance_t *)it;
+        dump_indent(out, depth);
+        fprintf(out, "instance %s %s\n", n->mod_name ? n->mod_name : "",
+                n->inst_name ? n->inst_name : "");
+        for (const vs_named_conn_t *c = n->params; c; c = (const vs_named_conn_t *)c->base.next) {
+            dump_indent(out, depth + 1);
+            fprintf(out, "param .%s\n", c->name ? c->name : "");
+            dump_expr(out, c->expr, depth + 2);
+        }
+        for (const vs_named_conn_t *c = n->ports; c; c = (const vs_named_conn_t *)c->base.next) {
+            dump_indent(out, depth + 1);
+            fprintf(out, "port .%s\n", c->name ? c->name : "");
+            dump_expr(out, c->expr, depth + 2);
+        }
+        break;
+    }
     case VS_ALWAYS: {
         const vs_always_t *n = (const vs_always_t *)it;
         dump_indent(out, depth);

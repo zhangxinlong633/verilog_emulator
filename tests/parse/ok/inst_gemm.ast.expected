@@ -1,1 +1,35 @@
-UNIMPLEMENTED
+design
+  module leaf
+    param W
+      number 8
+    port input a
+      range
+        binary -
+          ident W
+          number 1
+        number 0
+    port output y
+      range
+        binary -
+          ident W
+          number 1
+        number 0
+    assign
+      lhs
+        ident y
+      rhs
+        ident a
+  module top
+    net_decl
+      range
+        number 7
+        number 0
+      ident a
+      ident y
+    instance leaf u
+      param .W
+        number 8
+      port .a
+        ident a
+      port .y
+        ident y

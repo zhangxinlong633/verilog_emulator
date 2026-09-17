@@ -162,6 +162,29 @@ vs_cont_assign_t *vs_cont_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs
     return n;
 }
 
+vs_named_conn_t *vs_named_conn_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *expr) {
+    vs_named_conn_t *n = vs_node_alloc(a, sizeof(*n), VS_NAMED_CONN, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->name = name;
+    n->expr = expr;
+    return n;
+}
+
+vs_instance_t *vs_instance_new(vs_arena_t *a, vs_loc_t loc, const char *mod_name, const char *inst_name,
+                               vs_named_conn_t *params, vs_named_conn_t *ports) {
+    vs_instance_t *n = vs_node_alloc(a, sizeof(*n), VS_INSTANCE, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->mod_name = mod_name;
+    n->inst_name = inst_name;
+    n->params = params;
+    n->ports = ports;
+    return n;
+}
+
 vs_always_t *vs_always_new(vs_arena_t *a, vs_loc_t loc, vs_node_t *event, vs_stmt_t *stmt) {
     vs_always_t *n = vs_node_alloc(a, sizeof(*n), VS_ALWAYS, loc);
     if (!n) {

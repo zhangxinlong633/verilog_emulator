@@ -17,6 +17,8 @@ typedef enum vs_node_kind {
     VS_INTEGER_DECL,
     VS_RANGE,
     VS_CONT_ASSIGN,
+    VS_INSTANCE,
+    VS_NAMED_CONN,
     VS_ALWAYS,
     VS_INITIAL,
     VS_EVENT_CONTROL,
@@ -184,6 +186,20 @@ typedef struct vs_cont_assign {
     vs_expr_t *rhs;
 } vs_cont_assign_t;
 
+typedef struct vs_named_conn {
+    vs_node_t base;
+    const char *name;
+    vs_expr_t *expr;
+} vs_named_conn_t;
+
+typedef struct vs_instance {
+    vs_node_t base;
+    const char *mod_name;
+    const char *inst_name;
+    vs_named_conn_t *params;
+    vs_named_conn_t *ports;
+} vs_instance_t;
+
 typedef struct vs_always {
     vs_node_t base;
     vs_node_t *event; /* event control or NULL */
@@ -303,6 +319,9 @@ vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, v
 vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *value);
 vs_integer_decl_t *vs_integer_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names);
 vs_cont_assign_t *vs_cont_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs, vs_expr_t *rhs);
+vs_named_conn_t *vs_named_conn_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *expr);
+vs_instance_t *vs_instance_new(vs_arena_t *a, vs_loc_t loc, const char *mod_name, const char *inst_name,
+                               vs_named_conn_t *params, vs_named_conn_t *ports);
 
 vs_always_t *vs_always_new(vs_arena_t *a, vs_loc_t loc, vs_node_t *event, vs_stmt_t *stmt);
 vs_initial_t *vs_initial_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *stmt);
