@@ -94,6 +94,14 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
 
 add_test(
+  NAME parse.ok.for_fill
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/for_fill.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/for_fill.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
   NAME parse.ok.counter
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
@@ -152,3 +160,10 @@ add_test(
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/param_width.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_param_width.cmake)
+
+add_test(
+  NAME sim.for_fill
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/for_fill.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_for_fill.cmake)
