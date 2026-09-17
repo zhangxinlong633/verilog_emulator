@@ -56,11 +56,16 @@ target_link_libraries(vs PRIVATE vs_sim)
 add_executable(test_util tests/util/test_util.c)
 target_link_libraries(test_util PRIVATE vs_util)
 
+add_executable(test_anno tests/util/test_anno.c)
+target_link_libraries(test_anno PRIVATE vs_util)
+
 add_executable(test_ast_dump tests/front/test_ast_dump.c)
 target_link_libraries(test_ast_dump PRIVATE vs_front)
 
 enable_testing()
 add_test(NAME util COMMAND test_util)
+add_test(NAME anno COMMAND test_anno)
+set_tests_properties(anno PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ast_dump COMMAND test_ast_dump)
 
 add_test(
