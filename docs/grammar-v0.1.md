@@ -79,14 +79,18 @@ or              // 仅在事件列表中作为分隔语义；作为运算符另�
 ```text
 design           ::= module_decl+
 
-module_decl      ::= 'module' id port_list? ';' module_item* 'endmodule'
+module_decl      ::= 'module' id param_port_list? port_list? ';' module_item* 'endmodule'
+
+param_port_list  ::= '#' '(' param_port_item (',' param_port_item)* ')'
+param_port_item  ::= 'parameter'? id '=' const_expr
 
 port_list        ::= '(' port_list_items? ')'
 port_list_items  ::= port (',' port)*
 port             ::= port_direction? range? id
 port_direction   ::= 'input' | 'output' | 'inout'
 
-module_item      ::= port_decl
+module_item      ::= parameter_decl
+                   | port_decl
                    | net_decl
                    | reg_decl
                    | cont_assign
@@ -95,10 +99,13 @@ module_item      ::= port_decl
                    | gate_instantiation      // 可选
                    | module_instantiation    // 可选 stub
 
+parameter_decl   ::= 'parameter' id '=' const_expr ';'
 port_decl        ::= port_direction range? list_of_ids ';'
 net_decl         ::= 'wire' range? list_of_ids ';'
 reg_decl         ::= 'reg' range? list_of_ids ';'
-range            ::= '[' expr ':' expr ']'
+range            ::= '[' const_expr ':' const_expr ']'
+/* const_expr (elab): number | parameter id | unary +/- | binary + - * / */
+
 
 cont_assign      ::= 'assign' lvalue '=' expr ';'
 
@@ -180,7 +187,7 @@ endmodule
 ## 5. 明确非目标（v0.1）
 
 - 预处理与宏
-- `parameter` / `localparam`（可很快加入，但 P0 可不做）
+- `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed range）
 - `case`/`casex`/`casez`
 - `for`/`while`/`repeat`/`forever`
 - `task`/`function`/`generate`

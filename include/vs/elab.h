@@ -13,7 +13,7 @@ typedef enum vs_proc_kind {
 
 typedef struct vs_signal {
     const char *name;
-    int width;
+    int width; /* concrete packed width after parameter const-fold */
     int is_reg;
     int index;
     vs_port_dir_t dir; /* VS_DIR_NONE if not a port */

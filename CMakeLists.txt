@@ -145,3 +145,10 @@ add_test(
     -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/inv_anno.v
     -DTRACE=${CMAKE_BINARY_DIR}/trace_meta_views.jsonl
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_views.cmake)
+
+add_test(
+  NAME sim.param_width
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/param_width.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_param_width.cmake)
