@@ -50,7 +50,8 @@ static int range_width(const vs_range_t *r) {
     return (msb >= lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
 }
 
-static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, int width, int is_reg) {
+static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, int width, int is_reg,
+                            vs_port_dir_t dir) {
     for (int i = 0; i < nl->nsigs; i++) {
         if (strcmp(nl->sigs[i].name, name) == 0) {
             if (width > nl->sigs[i].width) {
@@ -58,6 +59,9 @@ static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, i
             }
             if (is_reg) {
                 nl->sigs[i].is_reg = 1;
+            }
+            if (dir != VS_DIR_NONE) {
+                nl->sigs[i].dir = dir;
             }
             return &nl->sigs[i];
         }
@@ -74,18 +78,20 @@ static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, i
     s->width = width > 0 ? width : 1;
     s->is_reg = is_reg;
     s->index = nl->nsigs;
+    s->dir = dir;
     nl->nsigs++;
     return s;
 }
 
-static void add_names(vs_arena_t *a, vs_netlist_t *nl, vs_expr_t *names, vs_range_t *range, int is_reg) {
+static void add_names(vs_arena_t *a, vs_netlist_t *nl, vs_expr_t *names, vs_range_t *range, int is_reg,
+                      vs_port_dir_t dir) {
     int w = range_width(range);
     for (vs_expr_t *e = names; e; e = (vs_expr_t *)e->base.next) {
         if (e->base.kind != VS_EXPR_IDENT) {
             continue;
         }
         const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
-        add_sig(a, nl, id->name, w, is_reg);
+        add_sig(a, nl, id->name, w, is_reg, dir);
     }
 }
 
@@ -133,25 +139,25 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
     nl->module_name = m->name;
 
     for (const vs_port_t *p = m->ports; p; p = (const vs_port_t *)p->base.next) {
-        int is_reg = (p->dir == VS_DIR_OUTPUT); /* may refine from items */
-        add_sig(arena, nl, p->name, range_width(p->range), is_reg);
+        int is_reg = (p->dir == VS_DIR_OUTPUT);
+        add_sig(arena, nl, p->name, range_width(p->range), is_reg, p->dir);
     }
 
     for (const vs_item_t *it = m->items; it; it = (const vs_item_t *)it->base.next) {
         switch (it->base.kind) {
         case VS_PORT_DECL: {
             const vs_port_decl_t *d = (const vs_port_decl_t *)it;
-            add_names(arena, nl, d->names, d->range, 0);
+            add_names(arena, nl, d->names, d->range, 0, d->dir);
             break;
         }
         case VS_NET_DECL: {
             const vs_net_decl_t *d = (const vs_net_decl_t *)it;
-            add_names(arena, nl, d->names, d->range, 0);
+            add_names(arena, nl, d->names, d->range, 0, VS_DIR_NONE);
             break;
         }
         case VS_REG_DECL: {
             const vs_reg_decl_t *d = (const vs_reg_decl_t *)it;
-            add_names(arena, nl, d->names, d->range, 1);
+            add_names(arena, nl, d->names, d->range, 1, VS_DIR_NONE);
             break;
         }
         case VS_CONT_ASSIGN: {
@@ -183,7 +189,7 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
                     pr.edge_sig = vs_netlist_find_sig(nl, ee->name);
                     if (pr.edge_sig < 0) {
                         /* edge signal may be port not yet widened; add */
-                        add_sig(arena, nl, ee->name, 1, 0);
+                        add_sig(arena, nl, ee->name, 1, 0, VS_DIR_NONE);
                         pr.edge_sig = vs_netlist_find_sig(nl, ee->name);
                     }
                 } else {

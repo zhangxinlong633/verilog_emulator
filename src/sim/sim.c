@@ -502,6 +502,78 @@ static void format_val(char *buf, size_t n, uint64_t v, int width) {
     }
 }
 
+static const char *dir_str(vs_port_dir_t d) {
+    switch (d) {
+    case VS_DIR_INPUT:
+        return "input";
+    case VS_DIR_OUTPUT:
+        return "output";
+    case VS_DIR_INOUT:
+        return "inout";
+    default:
+        return "internal";
+    }
+}
+
+static void trace_meta(vs_sim_t *sim) {
+    if (!sim->trace && !sim->verbose) {
+        return;
+    }
+    char ports[2048];
+    size_t off = 0;
+    ports[0] = '\0';
+    off += (size_t)snprintf(ports + off, sizeof ports - off, "[");
+    for (int i = 0; i < sim->nl->nsigs; i++) {
+        vs_signal_t *s = &sim->nl->sigs[i];
+        if (i > 0) {
+            off += (size_t)snprintf(ports + off, sizeof ports - off, ",");
+        }
+        off += (size_t)snprintf(ports + off, sizeof ports - off,
+                                "{\"name\":\"%s\",\"dir\":\"%s\",\"width\":%d,\"reg\":%s}", s->name,
+                                dir_str(s->dir), s->width, s->is_reg ? "true" : "false");
+        if (off >= sizeof ports - 64) {
+            break;
+        }
+    }
+    snprintf(ports + off, sizeof ports - off, "]");
+
+    char procs[1024];
+    size_t po = 0;
+    procs[0] = '\0';
+    po += (size_t)snprintf(procs + po, sizeof procs - po, "[");
+    for (int i = 0; i < sim->nl->nprocs; i++) {
+        if (i > 0) {
+            po += (size_t)snprintf(procs + po, sizeof procs - po, ",");
+        }
+        const char *k = "always";
+        if (sim->nl->procs[i].kind == VS_PROC_ASSIGN) {
+            k = "assign";
+        } else if (sim->nl->procs[i].kind == VS_PROC_INITIAL) {
+            k = "initial";
+        }
+        po += (size_t)snprintf(procs + po, sizeof procs - po, "{\"name\":\"%s\",\"kind\":\"%s\"}",
+                               sim->nl->procs[i].name, k);
+        if (po >= sizeof procs - 64) {
+            break;
+        }
+    }
+    snprintf(procs + po, sizeof procs - po, "]");
+
+    char line[4096];
+    snprintf(line, sizeof line,
+             "{\"t\":0,\"d\":0,\"tid\":0,\"op\":\"meta\",\"module\":\"%s\",\"ports\":%s,\"procs\":%s}\n",
+             sim->nl->module_name ? sim->nl->module_name : "top", ports, procs);
+    if (sim->verbose) {
+        fputs(line, stderr);
+    }
+    if (sim->trace) {
+        pthread_mutex_lock(&sim->trace_mu);
+        fputs(line, sim->trace);
+        fflush(sim->trace);
+        pthread_mutex_unlock(&sim->trace_mu);
+    }
+}
+
 int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_sim_opts_t *opts) {
     if (!arena || !diag || !nl || !opts) {
         return 1;
@@ -540,9 +612,11 @@ int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_si
         half = 1;
     }
 
-    /* Run initials once at t=0 */
     sim.time = 0;
     sim.delta = 0;
+    trace_meta(&sim);
+
+    /* Run initials once at t=0 */
     int wake[VS_MAX_WAKE];
     int nwake = 0;
     for (int i = 0; i < nl->nprocs; i++) {

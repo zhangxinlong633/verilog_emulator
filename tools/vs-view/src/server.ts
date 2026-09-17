@@ -3,6 +3,18 @@ import * as http from "node:http";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export type PortInfo = {
+  name: string;
+  dir: string;
+  width: number;
+  reg?: boolean;
+};
+
+export type ProcInfo = {
+  name: string;
+  kind: string;
+};
+
 export type TraceEvent = {
   t: number;
   d: number;
@@ -12,6 +24,9 @@ export type TraceEvent = {
   val?: string;
   proc?: string;
   msg?: string;
+  module?: string;
+  ports?: PortInfo[];
+  procs?: ProcInfo[];
 };
 
 function parseArgs(argv: string[]): { trace: string; port: number } {
@@ -43,22 +58,26 @@ export function loadTrace(filePath: string): TraceEvent[] {
     try {
       events.push(JSON.parse(s) as TraceEvent);
     } catch {
-      /* skip bad lines */
+      /* skip */
     }
   }
   return events;
 }
 
-function waveFromEvents(events: TraceEvent[], signals: string[]): Record<string, { t: number; v: string }[]> {
+function waveFromEvents(
+  events: TraceEvent[],
+  signals: string[],
+): Record<string, { t: number; v: string }[]> {
   const waves: Record<string, { t: number; v: string }[]> = {};
-  for (const s of signals) {
-    waves[s] = [];
-  }
+  for (const s of signals) waves[s] = [];
   for (const e of events) {
-    if ((e.op === "commit" || e.op === "clock" || e.op === "reset" || e.op === "ba") && e.sig && e.val !== undefined) {
-      if (waves[e.sig]) {
-        waves[e.sig].push({ t: e.t, v: e.val });
-      }
+    if (
+      (e.op === "commit" || e.op === "clock" || e.op === "reset" || e.op === "ba") &&
+      e.sig &&
+      e.val !== undefined &&
+      waves[e.sig]
+    ) {
+      waves[e.sig].push({ t: e.t, v: e.val });
     }
   }
   return waves;
@@ -74,15 +93,27 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/api/trace") {
     try {
       const events = loadTrace(trace);
+      const meta = events.find((e) => e.op === "meta");
       const sigSet = new Set<string>();
+      if (meta?.ports) {
+        for (const p of meta.ports) sigSet.add(p.name);
+      }
       for (const e of events) {
         if (e.sig) sigSet.add(e.sig);
       }
-      const signals = [...sigSet].slice(0, 4);
+      const signals = [...sigSet];
+      let maxT = 0;
+      for (const e of events) {
+        if (e.t > maxT) maxT = e.t;
+      }
       const body = JSON.stringify({
         events,
         signals,
         waves: waveFromEvents(events, signals),
+        module: meta?.module ?? "module",
+        ports: meta?.ports ?? [],
+        procs: meta?.procs ?? [],
+        maxT,
       });
       res.writeHead(200, {
         "Content-Type": "application/json; charset=utf-8",
@@ -96,7 +127,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  let filePath = path.join(publicDir, url.pathname === "/" ? "index.html" : url.pathname);
+  const filePath = path.join(publicDir, url.pathname === "/" ? "index.html" : url.pathname);
   if (!filePath.startsWith(publicDir)) {
     res.writeHead(403);
     res.end("forbidden");

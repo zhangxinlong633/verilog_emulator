@@ -9,16 +9,33 @@
 <body>
   <header>
     <h1>vs-view</h1>
-    <p>事件时间线 + 精简波形（JSONL）</p>
+    <p>模块端口与仿真值 · 时间线 · 波形</p>
   </header>
+
+  <section class="module-section">
+    <h2>Module</h2>
+    <div id="module-board" class="module-board" aria-live="polite"></div>
+    <div class="scrubber">
+      <label for="time">时间 t = <strong id="time-label">0</strong></label>
+      <input id="time" type="range" min="0" max="0" value="0" step="1" />
+      <div class="scrubber-actions">
+        <button type="button" id="btn-prev" title="上一拍">‹</button>
+        <button type="button" id="btn-play" title="播放/暂停">▶</button>
+        <button type="button" id="btn-next" title="下一拍">›</button>
+      </div>
+    </div>
+  </section>
+
   <section>
     <h2>Timeline</h2>
     <div id="timeline"></div>
   </section>
+
   <section>
     <h2>Waves</h2>
-    <canvas id="waves" width="960" height="220"></canvas>
+    <canvas id="waves" width="960" height="240"></canvas>
   </section>
+
   <script src="/client.js"></script>
 </body>
 </html>

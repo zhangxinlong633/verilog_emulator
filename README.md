@@ -28,9 +28,10 @@ ctest --test-dir build --output-on-failure
   --threads 4 --until 200 --clock clk=10 --reset rst=20 \
   --watch q,clk,rst --trace build/trace.jsonl
 
-# TypeScript 可视化
-cd tools/vs-view && npm install && npm start -- --trace ../../build/trace.jsonl --port 8787
-# 浏览器打开 http://127.0.0.1:8787
+# TypeScript 可视化（模块框图 + 端口值 + 时间轴）
+cd tools/vs-view && npm install && npm run build
+node dist/server.js --trace ../../build/trace.jsonl --port 8787
+# 浏览器打开 http://127.0.0.1:8787 —— 左侧输入 / 中间模块 / 右侧输出，可拖动时间看值变化
 ```
 
 ## 文档

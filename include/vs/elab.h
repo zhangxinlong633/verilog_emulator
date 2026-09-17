@@ -16,6 +16,7 @@ typedef struct vs_signal {
     int width;
     int is_reg;
     int index;
+    vs_port_dir_t dir; /* VS_DIR_NONE if not a port */
 } vs_signal_t;
 
 typedef struct vs_process {
