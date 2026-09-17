@@ -27,6 +27,7 @@ ctest --test-dir build --output-on-failure
 ./build/vs run docs/examples/counter.v \
   --threads 4 --until 200 --clock clk=10 --reset rst=20 \
   --watch q,clk,rst --trace build/trace.jsonl
+```
 
 ## 多端口示例
 
@@ -42,9 +43,9 @@ ctest --test-dir build --output-on-failure
   --force a=5 --force b=3 --force c=1 --force sel=1 \
   --watch a,b,c,sel,sum,mix,aand,eq_ab,gt --trace build/trace_combo.jsonl
 
+# TypeScript 可视化（左侧输入 / 中间模块 / 右侧输出）
 cd tools/vs-view && npm run build
 node dist/server.js --trace ../../build/trace_alu4.jsonl --port 8787
-```
 ```
 
 ## 文档

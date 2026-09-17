@@ -109,3 +109,10 @@ add_test(
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/counter.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_det.cmake)
+
+add_test(
+  NAME sim.sum_1_to_100
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/sum_1_to_100.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_sum100.cmake)
