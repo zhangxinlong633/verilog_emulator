@@ -1,7 +1,7 @@
 # Design: Toy NPU — single-layer Transformer (hard attention)
 
 Date: 2026-09-17  
-Status: approved  
+Status: implemented  
 Related: `docs/superpowers/specs/2026-09-17-param-matmul-arrays-design.md`, `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md`
 
 ## Goal

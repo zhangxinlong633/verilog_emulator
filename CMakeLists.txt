@@ -161,6 +161,14 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_npu_transformer.cmake)
 
 add_test(
+  NAME sim.meta_npu
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/npu_transformer.v
+    -DTRACE=${CMAKE_BINARY_DIR}/trace_meta_npu.jsonl
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_npu.cmake)
+
+add_test(
   NAME sim.meta_views
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>

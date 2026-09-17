@@ -26,6 +26,7 @@
 - [x] `parameter` / 过程 `for` / 1D·2D unpacked（元素名 `base_i` / `base_i_j`）+ `examples/matmul.v`
 - [x] `@vs array=` 视图按参数展开 cells
 - [x] 确定性测试：threads 1 vs 4 最终 watch 一致
+- [x] 玩具 NPU：`examples/npu_transformer.v`（硬注意力 Transformer 层 + `@vs` 矩阵）
 
 **完成标准：** counter 可 `vs run`；Node UI 可查看 trace。 — **已达到**
 

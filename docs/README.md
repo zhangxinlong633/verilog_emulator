@@ -18,6 +18,7 @@
 | 版本阶段规划 | [roadmap.md](roadmap.md) |
 | 如何新增一条语法 | [contributing-syntax.md](contributing-syntax.md) |
 | `@vs` 类型化视图（矩阵等） | [superpowers/specs/2026-09-17-typed-views-anno-design.md](superpowers/specs/2026-09-17-typed-views-anno-design.md) |
+| 玩具 NPU Transformer | [superpowers/specs/2026-09-17-npu-transformer-design.md](superpowers/specs/2026-09-17-npu-transformer-design.md) |
 | 参数化 matmul（parameter/for/数组） | [superpowers/specs/2026-09-17-param-matmul-arrays-design.md](superpowers/specs/2026-09-17-param-matmul-arrays-design.md) |
 
 ## 示例源码
