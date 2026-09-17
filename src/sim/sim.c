@@ -445,7 +445,6 @@ static void collect_edge_wake(vs_sim_t *sim, int *wake, int *nwake) {
             continue;
         }
         if (p->level_sensitive || p->kind == VS_PROC_ASSIGN) {
-            /* wake assign if any rhs-related change — lite: any change */
             int wake_it = 0;
             for (int s = 0; s < sim->nsigs; s++) {
                 if (sim->changed[s]) {
@@ -453,7 +452,7 @@ static void collect_edge_wake(vs_sim_t *sim, int *wake, int *nwake) {
                     break;
                 }
             }
-            if (p->kind == VS_PROC_ASSIGN && wake_it && *nwake < VS_MAX_WAKE) {
+            if (wake_it && *nwake < VS_MAX_WAKE) {
                 wake[(*nwake)++] = i;
             }
             continue;
@@ -638,6 +637,15 @@ int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_si
             set_sig(&sim, rst, rv, "reset");
         }
 
+        if (opts->forces && opts->nforces > 0) {
+            for (int fi = 0; fi < opts->nforces; fi++) {
+                int si = vs_netlist_find_sig(nl, opts->forces[fi].name);
+                if (si >= 0) {
+                    set_sig(&sim, si, opts->forces[fi].value, "force");
+                }
+            }
+        }
+
         if (clk >= 0 && period > 0) {
             uint64_t phase = t % (uint64_t)period;
             uint64_t cv = (phase < (uint64_t)half) ? 1 : 0;
@@ -652,7 +660,7 @@ int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_si
             /* Also first delta after time advance may need level assigns */
             if (d == 0) {
                 for (int i = 0; i < nl->nprocs; i++) {
-                    if (nl->procs[i].kind == VS_PROC_ASSIGN) {
+                    if (nl->procs[i].kind == VS_PROC_ASSIGN || nl->procs[i].level_sensitive) {
                         int already = 0;
                         for (int k = 0; k < nwake; k++) {
                             if (wake[k] == i) {

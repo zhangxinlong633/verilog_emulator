@@ -7,6 +7,11 @@
 
 #include <stdint.h>
 
+typedef struct vs_sim_force {
+    const char *name;
+    uint64_t value;
+} vs_sim_force_t;
+
 typedef struct vs_sim_opts {
     int threads;
     uint64_t until_time;
@@ -18,6 +23,8 @@ typedef struct vs_sim_opts {
     int verbose;
     const char **watch;
     int nwatch;
+    const vs_sim_force_t *forces;
+    int nforces;
     /* Optional: fill final watched values (length nwatch) as decimal strings into arena */
     char **out_watch_vals;
 } vs_sim_opts_t;

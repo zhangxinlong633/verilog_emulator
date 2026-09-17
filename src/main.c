@@ -26,6 +26,7 @@ static void usage(FILE *out) {
             "  --trace PATH         Write JSONL process dump\n"
             "  --clock name=period  Host clock (e.g. clk=10)\n"
             "  --reset name=cycles  Reset high for first cycles (e.g. rst=20)\n"
+            "  --force name=value   Hold input constant (repeatable)\n"
             "  --watch a,b,q        Print final values\n"
             "  -v, --verbose        Mirror trace events to stderr\n"
             "\n"
@@ -90,8 +91,10 @@ static int cmd_run(int argc, char **argv) {
     const char *reset_name = "rst";
     int reset_cycles = 0;
     int have_reset = 0;
-    const char *watch_str = "q,clk,rst";
+    const char *watch_str = NULL;
     int verbose = 0;
+    vs_sim_force_t force_buf[32];
+    int nforces = 0;
 
     for (int i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -145,6 +148,22 @@ static int cmd_run(int argc, char **argv) {
             have_reset = 1;
             continue;
         }
+        if (!strcmp(argv[i], "--force") && i + 1 < argc) {
+            const char *spec = argv[++i];
+            const char *eq = strchr(spec, '=');
+            if (!eq || nforces >= 32) {
+                fprintf(stderr, "vs: --force expects name=value (max 32)\n");
+                return 2;
+            }
+            size_t nlen = (size_t)(eq - spec);
+            char *name = malloc(nlen + 1);
+            memcpy(name, spec, nlen);
+            name[nlen] = '\0';
+            force_buf[nforces].name = name;
+            force_buf[nforces].value = strtoull(eq + 1, NULL, 0);
+            nforces++;
+            continue;
+        }
         if (!strcmp(argv[i], "--watch") && i + 1 < argc) {
             watch_str = argv[++i];
             continue;
@@ -168,7 +187,10 @@ static int cmd_run(int argc, char **argv) {
         return 2;
     }
     if (!have_clock) {
-        have_clock = 1; /* default clk=10 */
+        have_clock = 1; /* default clk=10 if signal exists */
+    }
+    if (!watch_str) {
+        watch_str = "q,clk,rst";
     }
 
     vs_arena_t *arena = vs_arena_create();
@@ -214,6 +236,8 @@ static int cmd_run(int argc, char **argv) {
     opts.watch = watch;
     opts.nwatch = nwatch;
     opts.out_watch_vals = out_vals;
+    opts.forces = nforces > 0 ? force_buf : NULL;
+    opts.nforces = nforces;
 
     int rc = vs_sim_run(arena, diag, nl, &opts);
     vs_diag_print_all(diag, stderr);
