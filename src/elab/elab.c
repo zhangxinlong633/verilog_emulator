@@ -240,7 +240,8 @@ static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, i
 }
 
 static int add_array1d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
-                       const char *base, vs_range_t *packed, vs_range_t *unpacked, int is_reg) {
+                       const char *base, vs_range_t *packed, vs_range_t *unpacked, int is_reg,
+                       vs_port_dir_t dir) {
     int width = 0;
     if (range_width(diag, env, packed, &width)) {
         return -1;
@@ -258,7 +259,7 @@ static int add_array1d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_n
     int first = nl->nsigs;
     for (int i = lo; i <= hi; i++) {
         const char *ename = arena_elem_name(a, base, i);
-        add_sig(a, nl, ename, width, is_reg, VS_DIR_NONE);
+        add_sig(a, nl, ename, width, is_reg, dir);
     }
 
     int ncap = nl->narrays + 1;
@@ -281,7 +282,7 @@ static int add_array1d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_n
 
 static int add_array2d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
                        const char *base, vs_range_t *packed, vs_range_t *dim0, vs_range_t *dim1,
-                       int is_reg) {
+                       int is_reg, vs_port_dir_t dir) {
     int width = 0;
     if (range_width(diag, env, packed, &width)) {
         return -1;
@@ -301,7 +302,7 @@ static int add_array2d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_n
     for (int i = lo0; i <= hi0; i++) {
         for (int j = lo1; j <= hi1; j++) {
             const char *ename = arena_elem_name2d(a, base, i, j);
-            add_sig(a, nl, ename, width, is_reg, VS_DIR_NONE);
+            add_sig(a, nl, ename, width, is_reg, dir);
         }
     }
 
@@ -325,19 +326,19 @@ static int add_array2d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_n
 
 static int add_unpacked_array(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
                               const char *base, vs_range_t *packed, vs_range_t *unpacked,
-                              int is_reg) {
+                              int is_reg, vs_port_dir_t dir) {
     if (!unpacked) {
         return -1;
     }
     vs_range_t *dim1 = (vs_range_t *)unpacked->base.next;
     if (!dim1) {
-        return add_array1d(a, diag, env, nl, base, packed, unpacked, is_reg);
+        return add_array1d(a, diag, env, nl, base, packed, unpacked, is_reg, dir);
     }
     if (dim1->base.next) {
         vs_diag_error(diag, unpacked->base.loc, "arrays deeper than 2D are not supported");
         return -1;
     }
-    return add_array2d(a, diag, env, nl, base, packed, unpacked, dim1, is_reg);
+    return add_array2d(a, diag, env, nl, base, packed, unpacked, dim1, is_reg, dir);
 }
 
 static int add_names(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
@@ -349,7 +350,7 @@ static int add_names(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_net
                 continue;
             }
             const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
-            if (add_unpacked_array(a, diag, env, nl, id->name, range, unpacked, is_reg)) {
+            if (add_unpacked_array(a, diag, env, nl, id->name, range, unpacked, is_reg, dir)) {
                 return -1;
             }
         }
@@ -503,6 +504,13 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
 
     for (const vs_port_t *p = m->ports; p; p = (const vs_port_t *)p->base.next) {
         int is_reg = (p->dir == VS_DIR_OUTPUT);
+        if (p->unpacked_dims) {
+            if (add_unpacked_array(arena, diag, &env, nl, p->name, p->range, p->unpacked_dims,
+                                   is_reg, p->dir)) {
+                return NULL;
+            }
+            continue;
+        }
         int w = 0;
         if (range_width(diag, &env, p->range, &w)) {
             return NULL;

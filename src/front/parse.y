@@ -176,6 +176,21 @@ port_item
         { $$ = vs_port_new(ctx->arena, loc_of(ctx, &@$), $1, $3, $4); }
     | port_dir K_REG range_opt IDENT
         { $$ = vs_port_new(ctx->arena, loc_of(ctx, &@$), $1, $3, $4); }
+    | port_dir range_opt IDENT unpacked_dims
+        {
+            $$ = vs_port_new(ctx->arena, loc_of(ctx, &@$), $1, $2, $3);
+            $$->unpacked_dims = $4;
+        }
+    | port_dir K_WIRE range_opt IDENT unpacked_dims
+        {
+            $$ = vs_port_new(ctx->arena, loc_of(ctx, &@$), $1, $3, $4);
+            $$->unpacked_dims = $5;
+        }
+    | port_dir K_REG range_opt IDENT unpacked_dims
+        {
+            $$ = vs_port_new(ctx->arena, loc_of(ctx, &@$), $1, $3, $4);
+            $$->unpacked_dims = $5;
+        }
     ;
 
 port_dir

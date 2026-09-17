@@ -121,7 +121,8 @@ struct vs_module {
 struct vs_port {
     vs_node_t base;
     vs_port_dir_t dir;
-    vs_range_t *range;
+    vs_range_t *range;         /* packed */
+    vs_range_t *unpacked_dims; /* optional 1D/2D unpacked */
     const char *name;
 };
 

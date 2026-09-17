@@ -82,6 +82,7 @@ vs_port_t *vs_port_new(vs_arena_t *a, vs_loc_t loc, vs_port_dir_t dir, vs_range_
     }
     p->dir = dir;
     p->range = range;
+    p->unpacked_dims = NULL;
     p->name = name;
     return p;
 }
