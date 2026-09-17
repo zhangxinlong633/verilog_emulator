@@ -154,6 +154,13 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_matmul_param.cmake)
 
 add_test(
+  NAME sim.npu_transformer
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/npu_transformer.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_npu_transformer.cmake)
+
+add_test(
   NAME sim.meta_views
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
