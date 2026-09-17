@@ -200,6 +200,13 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_param_width.cmake)
 
 add_test(
+  NAME sim.inst_leaf
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/inst_leaf.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_inst_leaf.cmake)
+
+add_test(
   NAME sim.for_fill
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
