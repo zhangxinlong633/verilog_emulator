@@ -1,1 +1,21 @@
-UNPARSED
+design
+  module param_width
+    param W
+      number 8
+    port input x
+      range
+        binary -
+          ident W
+          number 1
+        number 0
+    port output y
+      range
+        binary -
+          ident W
+          number 1
+        number 0
+    assign
+      lhs
+        ident y
+      rhs
+        ident x

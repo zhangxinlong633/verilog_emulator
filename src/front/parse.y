@@ -45,6 +45,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
     vs_module_t *module;
     vs_port_t *port;
     vs_port_t *ports;
+    vs_param_decl_t *params;
     vs_item_t *item;
     vs_item_t *items;
     vs_expr_t *expr;
@@ -67,6 +68,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %token LTEQ GTEQ EQEQ NEQ LAND LOR NAND NOR XNOR
 
 %type <module> module_decl
+%type <params> param_port_list_opt param_port_items
 %type <ports> port_list_opt port_list_items
 %type <port> port_item
 %type <dir> port_dir
@@ -99,22 +101,54 @@ design
     ;
 
 module_decl
-    : K_MODULE IDENT port_list_opt ';' module_items K_ENDMODULE
+    : K_MODULE IDENT param_port_list_opt port_list_opt ';' module_items K_ENDMODULE
         {
             vs_module_t *m = vs_module_new(ctx->arena, loc_of(ctx, &@$), $2);
-            for (vs_port_t *p = $3; p; ) {
+            for (vs_param_decl_t *p = $3; p; ) {
+                vs_param_decl_t *n = (vs_param_decl_t *)p->base.next;
+                p->base.next = NULL;
+                vs_module_add_param(m, p);
+                p = n;
+            }
+            for (vs_port_t *p = $4; p; ) {
                 vs_port_t *n = (vs_port_t *)p->base.next;
                 p->base.next = NULL;
                 vs_module_add_port(m, p);
                 p = n;
             }
-            for (vs_item_t *it = $5; it; ) {
+            for (vs_item_t *it = $6; it; ) {
                 vs_item_t *n = (vs_item_t *)it->base.next;
                 it->base.next = NULL;
-                vs_module_add_item(m, it);
+                if (it->base.kind == VS_PARAM_DECL) {
+                    vs_module_add_param(m, (vs_param_decl_t *)it);
+                } else {
+                    vs_module_add_item(m, it);
+                }
                 it = n;
             }
             $$ = m;
+        }
+    ;
+
+param_port_list_opt
+    : /* empty */ { $$ = NULL; }
+    | '#' '(' param_port_items ')' { $$ = $3; }
+    ;
+
+param_port_items
+    : K_PARAMETER IDENT '=' expr
+        { $$ = vs_param_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
+    | param_port_items ',' K_PARAMETER IDENT '=' expr
+        {
+            vs_node_list_append((vs_node_t **)&$1,
+                                (vs_node_t *)vs_param_decl_new(ctx->arena, loc_of(ctx, &@$), $4, $6));
+            $$ = $1;
+        }
+    | param_port_items ',' IDENT '=' expr
+        {
+            vs_node_list_append((vs_node_t **)&$1,
+                                (vs_node_t *)vs_param_decl_new(ctx->arena, loc_of(ctx, &@$), $3, $5));
+            $$ = $1;
         }
     ;
 
@@ -170,6 +204,8 @@ module_item
         { $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3); }
     | K_REG range_opt name_list ';'
         { $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3); }
+    | K_PARAMETER IDENT '=' expr ';'
+        { $$ = (vs_item_t *)vs_param_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
     | K_ASSIGN lvalue '=' expr ';'
         { $$ = (vs_item_t *)vs_cont_assign_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
     | K_ALWAYS event_control statement
