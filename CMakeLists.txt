@@ -162,6 +162,13 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_matmul_param.cmake)
 
 add_test(
+  NAME sim.blas_gemm
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/blas/gemm.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_blas_gemm.cmake)
+
+add_test(
   NAME sim.npu_transformer
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
