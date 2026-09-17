@@ -1,7 +1,7 @@
 # Design: vs — Verilog Simulator
 
 **Date:** 2026-09-17  
-**Status:** Spec written; awaiting user review before implementation plan  
+**Status:** Approved; P0 plan at `docs/superpowers/plans/2026-09-17-vs-p0-parser.md`  
 **Program name:** `vs` (Verilog Simulator)
 
 ## 1. Goals
