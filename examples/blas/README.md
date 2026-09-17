@@ -10,8 +10,8 @@ Instantiate with named ports; connect whole 2D arrays by identifier.
 | `relu.v` | `blas_relu` | elementwise ReLU (clear if MSB set) |
 | `row_argmax.v` | `blas_row_argmax` | row-wise one-hot argmax (lowest index on ties) |
 
-Packed widths: `WA`/`WB` for inputs (default 8), `CW` for gemm outputs (default 32).
-ReLU / argmax use a single `W` (default 32).
+Output packed width is `CW` (default `32`). Inputs use `WA`/`WB` (default 8).
+`gemm.v` 带 `// @vs` 矩阵视图，可与 `matmul.v` 一样在 vs-view 中核对 `A×B=C`。
 
 Run gemm alone (it is the top when listed first):
 

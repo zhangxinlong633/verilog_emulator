@@ -1,4 +1,8 @@
 // C[N×M] = A[N×K] · B[K×M]  (combinational)
+// @vs view matrix A array=a rows=N cols=K
+// @vs view matrix B array=b rows=K cols=M
+// @vs view matrix C array=c rows=N cols=M
+// @vs op matmul out=C left=A right=B
 module blas_gemm #(
   parameter N = 2,
   parameter K = 2,
