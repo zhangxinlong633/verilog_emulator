@@ -108,22 +108,26 @@ vs_port_decl_t *vs_port_decl_new(vs_arena_t *a, vs_loc_t loc, vs_port_dir_t dir,
     return d;
 }
 
-vs_net_decl_t *vs_net_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names) {
+vs_net_decl_t *vs_net_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names,
+                               vs_range_t *unpacked_dims) {
     vs_net_decl_t *d = vs_node_alloc(a, sizeof(*d), VS_NET_DECL, loc);
     if (!d) {
         return NULL;
     }
     d->range = range;
+    d->unpacked_dims = unpacked_dims;
     d->names = names;
     return d;
 }
 
-vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names) {
+vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names,
+                               vs_range_t *unpacked_dims) {
     vs_reg_decl_t *d = vs_node_alloc(a, sizeof(*d), VS_REG_DECL, loc);
     if (!d) {
         return NULL;
     }
     d->range = range;
+    d->unpacked_dims = unpacked_dims;
     d->names = names;
     return d;
 }
@@ -135,6 +139,15 @@ vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name
     }
     d->name = name;
     d->value = value;
+    return d;
+}
+
+vs_integer_decl_t *vs_integer_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names) {
+    vs_integer_decl_t *d = vs_node_alloc(a, sizeof(*d), VS_INTEGER_DECL, loc);
+    if (!d) {
+        return NULL;
+    }
+    d->names = names;
     return d;
 }
 
@@ -225,6 +238,19 @@ vs_if_t *vs_if_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *cond, vs_stmt_t *then
     return n;
 }
 
+vs_for_t *vs_for_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *init, vs_expr_t *cond, vs_stmt_t *step,
+                     vs_stmt_t *body) {
+    vs_for_t *n = vs_node_alloc(a, sizeof(*n), VS_FOR, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->init = init;
+    n->cond = cond;
+    n->step = step;
+    n->body = body;
+    return n;
+}
+
 vs_assign_stmt_t *vs_blocking_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs,
                                          vs_expr_t *rhs) {
     vs_assign_stmt_t *n = vs_node_alloc(a, sizeof(*n), VS_BLOCKING_ASSIGN, loc);
@@ -292,6 +318,16 @@ vs_expr_t *vs_expr_binary_new(vs_arena_t *a, vs_loc_t loc, vs_binary_op_t op, vs
 
 vs_expr_t *vs_expr_select_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *expr, vs_expr_t *index) {
     vs_expr_select_t *n = vs_node_alloc(a, sizeof(*n), VS_EXPR_SELECT, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->expr = expr;
+    n->index = index;
+    return (vs_expr_t *)n;
+}
+
+vs_expr_t *vs_expr_index_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *expr, vs_expr_t *index) {
+    vs_expr_index_t *n = vs_node_alloc(a, sizeof(*n), VS_EXPR_INDEX, loc);
     if (!n) {
         return NULL;
     }

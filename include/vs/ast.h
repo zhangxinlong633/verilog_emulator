@@ -14,6 +14,7 @@ typedef enum vs_node_kind {
     VS_NET_DECL,
     VS_REG_DECL,
     VS_PARAM_DECL,
+    VS_INTEGER_DECL,
     VS_RANGE,
     VS_CONT_ASSIGN,
     VS_ALWAYS,
@@ -24,6 +25,7 @@ typedef enum vs_node_kind {
     VS_EVENT_OR,
     VS_BLOCK,
     VS_IF,
+    VS_FOR,
     VS_BLOCKING_ASSIGN,
     VS_NBA,
     VS_EMPTY_STMT,
@@ -32,6 +34,7 @@ typedef enum vs_node_kind {
     VS_EXPR_UNARY,
     VS_EXPR_BINARY,
     VS_EXPR_SELECT,
+    VS_EXPR_INDEX,
     VS_EXPR_PART,
     VS_EXPR_CONCAT
 } vs_node_kind_t;
@@ -151,13 +154,15 @@ typedef struct vs_port_decl {
 
 typedef struct vs_net_decl {
     vs_node_t base;
-    vs_range_t *range;
+    vs_range_t *range;         /* packed */
+    vs_range_t *unpacked_dims; /* 1D unpacked; NULL if scalar */
     vs_expr_t *names;
 } vs_net_decl_t;
 
 typedef struct vs_reg_decl {
     vs_node_t base;
-    vs_range_t *range;
+    vs_range_t *range;         /* packed */
+    vs_range_t *unpacked_dims; /* 1D unpacked; NULL if scalar */
     vs_expr_t *names;
 } vs_reg_decl_t;
 
@@ -166,6 +171,11 @@ struct vs_param_decl {
     const char *name;
     vs_expr_t *value;
 };
+
+typedef struct vs_integer_decl {
+    vs_node_t base;
+    vs_expr_t *names; /* IDENT list */
+} vs_integer_decl_t;
 
 typedef struct vs_cont_assign {
     vs_node_t base;
@@ -213,6 +223,14 @@ typedef struct vs_if {
     vs_stmt_t *else_stmt;
 } vs_if_t;
 
+typedef struct vs_for {
+    vs_node_t base;
+    vs_stmt_t *init;
+    vs_expr_t *cond;
+    vs_stmt_t *step;
+    vs_stmt_t *body;
+} vs_for_t;
+
 typedef struct vs_assign_stmt {
     vs_node_t base;
     vs_expr_t *lhs;
@@ -248,6 +266,9 @@ typedef struct vs_expr_select {
     vs_expr_t *index;
 } vs_expr_select_t;
 
+/* Same layout as select; kind is VS_EXPR_INDEX (array / bit index). */
+typedef vs_expr_select_t vs_expr_index_t;
+
 typedef struct vs_expr_part {
     vs_node_t base;
     vs_expr_t *expr;
@@ -274,9 +295,12 @@ vs_range_t *vs_range_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *msb, vs_expr_t 
 
 vs_port_decl_t *vs_port_decl_new(vs_arena_t *a, vs_loc_t loc, vs_port_dir_t dir, vs_range_t *range,
                                  vs_expr_t *names);
-vs_net_decl_t *vs_net_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names);
-vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names);
+vs_net_decl_t *vs_net_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names,
+                               vs_range_t *unpacked_dims);
+vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, vs_expr_t *names,
+                               vs_range_t *unpacked_dims);
 vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *value);
+vs_integer_decl_t *vs_integer_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names);
 vs_cont_assign_t *vs_cont_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs, vs_expr_t *rhs);
 
 vs_always_t *vs_always_new(vs_arena_t *a, vs_loc_t loc, vs_node_t *event, vs_stmt_t *stmt);
@@ -289,6 +313,8 @@ vs_block_t *vs_block_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *stmts);
 void vs_block_add_stmt(vs_block_t *b, vs_stmt_t *s);
 vs_if_t *vs_if_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *cond, vs_stmt_t *then_stmt,
                    vs_stmt_t *else_stmt);
+vs_for_t *vs_for_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *init, vs_expr_t *cond, vs_stmt_t *step,
+                     vs_stmt_t *body);
 vs_assign_stmt_t *vs_blocking_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs,
                                          vs_expr_t *rhs);
 vs_assign_stmt_t *vs_nba_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs, vs_expr_t *rhs);
@@ -300,6 +326,7 @@ vs_expr_t *vs_expr_unary_new(vs_arena_t *a, vs_loc_t loc, vs_unary_op_t op, vs_e
 vs_expr_t *vs_expr_binary_new(vs_arena_t *a, vs_loc_t loc, vs_binary_op_t op, vs_expr_t *lhs,
                               vs_expr_t *rhs);
 vs_expr_t *vs_expr_select_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *expr, vs_expr_t *index);
+vs_expr_t *vs_expr_index_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *expr, vs_expr_t *index);
 vs_expr_t *vs_expr_part_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *expr, vs_expr_t *msb,
                             vs_expr_t *lsb);
 vs_expr_t *vs_expr_concat_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *exprs);

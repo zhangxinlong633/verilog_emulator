@@ -69,6 +69,7 @@
 "end"                     { return K_END; }
 "if"                      { return K_IF; }
 "else"                    { return K_ELSE; }
+"for"                     { return K_FOR; }
 "posedge"                 { return K_POSEDGE; }
 "negedge"                 { return K_NEGEDGE; }
 "or"                      { return K_OR; }

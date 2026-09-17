@@ -64,7 +64,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %token K_INPUT K_OUTPUT K_INOUT K_WIRE K_REG
 %token K_PARAMETER K_INTEGER
 %token K_ASSIGN K_ALWAYS K_INITIAL K_BEGIN K_END
-%token K_IF K_ELSE K_POSEDGE K_NEGEDGE K_OR
+%token K_IF K_ELSE K_FOR K_POSEDGE K_NEGEDGE K_OR
 %token LTEQ GTEQ EQEQ NEQ LAND LOR NAND NOR XNOR
 
 %type <module> module_decl
@@ -76,7 +76,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %type <item> module_item
 %type <range> range_opt range
 %type <expr> expr expr_list name_list lvalue
-%type <stmt> statement statement_list
+%type <stmt> statement statement_list for_assign
 %type <node> event_control event_expr_list event_expr_term
 
 %left LOR
@@ -201,11 +201,25 @@ module_item
     : port_dir range_opt name_list ';'
         { $$ = (vs_item_t *)vs_port_decl_new(ctx->arena, loc_of(ctx, &@$), $1, $2, $3); }
     | K_WIRE range_opt name_list ';'
-        { $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3); }
+        { $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3, NULL); }
+    | K_WIRE range_opt IDENT range ';'
+        {
+            $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2,
+                                              vs_expr_ident_new(ctx->arena, loc_of(ctx, &@3), $3),
+                                              $4);
+        }
     | K_REG range_opt name_list ';'
-        { $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3); }
+        { $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3, NULL); }
+    | K_REG range_opt IDENT range ';'
+        {
+            $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2,
+                                              vs_expr_ident_new(ctx->arena, loc_of(ctx, &@3), $3),
+                                              $4);
+        }
     | K_PARAMETER IDENT '=' expr ';'
         { $$ = (vs_item_t *)vs_param_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
+    | K_INTEGER name_list ';'
+        { $$ = (vs_item_t *)vs_integer_decl_new(ctx->arena, loc_of(ctx, &@$), $2); }
     | K_ASSIGN lvalue '=' expr ';'
         { $$ = (vs_item_t *)vs_cont_assign_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
     | K_ALWAYS event_control statement
@@ -276,6 +290,8 @@ statement
         { $$ = (vs_stmt_t *)vs_if_new(ctx->arena, loc_of(ctx, &@$), $3, $5, NULL); }
     | K_IF '(' expr ')' statement K_ELSE statement
         { $$ = (vs_stmt_t *)vs_if_new(ctx->arena, loc_of(ctx, &@$), $3, $5, $7); }
+    | K_FOR '(' for_assign ';' expr ';' for_assign ')' statement
+        { $$ = (vs_stmt_t *)vs_for_new(ctx->arena, loc_of(ctx, &@$), $3, $5, $7, $9); }
     | event_control statement
         {
             /* timing control prefix: wrap as block-like always body uses event on always */
@@ -291,6 +307,11 @@ statement
             $$ = $2;
             (void)$1;
         }
+    ;
+
+for_assign
+    : lvalue '=' expr
+        { $$ = (vs_stmt_t *)vs_blocking_assign_new(ctx->arena, loc_of(ctx, &@$), $1, $3); }
     ;
 
 statement_list
@@ -311,8 +332,8 @@ lvalue
         { $$ = vs_expr_ident_new(ctx->arena, loc_of(ctx, &@$), $1); }
     | IDENT '[' expr ']'
         {
-            $$ = vs_expr_select_new(ctx->arena, loc_of(ctx, &@$),
-                                    vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3);
+            $$ = vs_expr_index_new(ctx->arena, loc_of(ctx, &@$),
+                                   vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3);
         }
     | IDENT '[' expr ':' expr ']'
         {
@@ -329,7 +350,7 @@ expr
     | NUMBER
         { $$ = vs_expr_number_new(ctx->arena, loc_of(ctx, &@$), $1); }
     | expr '[' expr ']'
-        { $$ = vs_expr_select_new(ctx->arena, loc_of(ctx, &@$), $1, $3); }
+        { $$ = vs_expr_index_new(ctx->arena, loc_of(ctx, &@$), $1, $3); }
     | expr '[' expr ':' expr ']'
         { $$ = vs_expr_part_new(ctx->arena, loc_of(ctx, &@$), $1, $3, $5); }
     | '{' expr_list '}'

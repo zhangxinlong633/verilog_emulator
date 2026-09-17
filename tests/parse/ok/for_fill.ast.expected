@@ -1,2 +1,52 @@
 design
   module for_fill
+    param N
+      number 4
+    param W
+      number 8
+    integer_decl
+      ident i
+    reg_decl
+      range
+        binary -
+          ident W
+          number 1
+        number 0
+      unpacked
+        range
+          number 0
+          binary -
+            ident N
+            number 1
+      ident mem
+    always
+      event_control
+        star
+      block
+        for
+          init
+            blocking
+              lhs
+                ident i
+              rhs
+                number 0
+          cond
+            binary <
+              ident i
+              ident N
+          step
+            blocking
+              lhs
+                ident i
+              rhs
+                binary +
+                  ident i
+                  number 1
+          body
+            blocking
+              lhs
+                index
+                  ident mem
+                  ident i
+              rhs
+                ident i

@@ -139,6 +139,14 @@ static void dump_expr(FILE *out, const vs_expr_t *e, int depth) {
         dump_expr(out, n->index, depth + 1);
         break;
     }
+    case VS_EXPR_INDEX: {
+        const vs_expr_index_t *n = (const vs_expr_index_t *)e;
+        dump_indent(out, depth);
+        fputs("index\n", out);
+        dump_expr(out, n->expr, depth + 1);
+        dump_expr(out, n->index, depth + 1);
+        break;
+    }
     case VS_EXPR_PART: {
         const vs_expr_part_t *n = (const vs_expr_part_t *)e;
         dump_indent(out, depth);
@@ -242,6 +250,24 @@ static void dump_stmt(FILE *out, const vs_stmt_t *s, int depth) {
         }
         break;
     }
+    case VS_FOR: {
+        const vs_for_t *n = (const vs_for_t *)s;
+        dump_indent(out, depth);
+        fputs("for\n", out);
+        dump_indent(out, depth + 1);
+        fputs("init\n", out);
+        dump_stmt(out, n->init, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("cond\n", out);
+        dump_expr(out, n->cond, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("step\n", out);
+        dump_stmt(out, n->step, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("body\n", out);
+        dump_stmt(out, n->body, depth + 2);
+        break;
+    }
     case VS_BLOCKING_ASSIGN: {
         const vs_assign_stmt_t *n = (const vs_assign_stmt_t *)s;
         dump_indent(out, depth);
@@ -299,6 +325,11 @@ static void dump_item(FILE *out, const vs_item_t *it, int depth) {
         dump_indent(out, depth);
         fputs("net_decl\n", out);
         dump_range(out, d->range, depth + 1);
+        if (d->unpacked_dims) {
+            dump_indent(out, depth + 1);
+            fputs("unpacked\n", out);
+            dump_range(out, d->unpacked_dims, depth + 2);
+        }
         dump_expr_list(out, d->names, depth + 1);
         break;
     }
@@ -307,6 +338,18 @@ static void dump_item(FILE *out, const vs_item_t *it, int depth) {
         dump_indent(out, depth);
         fputs("reg_decl\n", out);
         dump_range(out, d->range, depth + 1);
+        if (d->unpacked_dims) {
+            dump_indent(out, depth + 1);
+            fputs("unpacked\n", out);
+            dump_range(out, d->unpacked_dims, depth + 2);
+        }
+        dump_expr_list(out, d->names, depth + 1);
+        break;
+    }
+    case VS_INTEGER_DECL: {
+        const vs_integer_decl_t *d = (const vs_integer_decl_t *)it;
+        dump_indent(out, depth);
+        fputs("integer_decl\n", out);
         dump_expr_list(out, d->names, depth + 1);
         break;
     }
