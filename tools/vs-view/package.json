@@ -1,0 +1,19 @@
+{
+  "name": "vs-view",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Timeline + slim waveform viewer for vs JSONL traces (TypeScript)",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
+    "start": "npm run build && node dist/server.js",
+    "dev": "npm run build && node dist/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

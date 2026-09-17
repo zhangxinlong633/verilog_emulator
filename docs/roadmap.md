@@ -5,7 +5,7 @@
 
 ## 阶段
 
-### P0 — 解析与 AST（当前）
+### P0 — 解析与 AST
 
 - [x] CMake + flex + bison 工程骨架
 - [x] `vs` CLI：`--dump-ast`、`--dump-tokens`、`--help`、`--version`
@@ -16,7 +16,17 @@
 
 **完成标准：** `ctest` 全绿；能 parse 计数器示例并 dump AST。 — **已达到**
 
-### P1 — Elaborate
+### P2-lite-MT — 最小多线程仿真 + Trace + Node 视图（当前）
+
+- [x] Flat elab-lite（单模块符号表 / process）
+- [x] 事件调度 + NBA + pthread 工作池（`--threads`）
+- [x] `--trace` JSONL、`--clock` / `--reset` / `--watch`、`-v`
+- [x] `tools/vs-view`（**TypeScript**）时间线 + 精简波形
+- [x] 确定性测试：threads 1 vs 4 最终 watch 一致
+
+**完成标准：** counter 可 `vs run`；Node UI 可查看 trace。 — **已达到**
+
+### P1 — Elaborate（完整）
 
 - 名字绑定（端口、网线、reg、实例）
 - 位宽推断/检查
@@ -25,15 +35,12 @@
 
 **完成标准：** 简单计数器 elaborate 成功；故意错误有清晰诊断。
 
-### P2 — 事件驱动仿真
+### P2 — 事件驱动仿真（完整）
 
-- 4 值逻辑（至少 0/1/x/z）或先 2 值再扩展（实现计划里锁定）
-- 敏感列表调度
-- 阻塞赋值 vs NBA 语义
-- `initial` / `always`
-- 基本结束条件（时间上限或 `$finish` 解析+执行）
+- 完整 4 值逻辑、更丰富过程语义
+- 通用 `#delay` / `$finish` 等
 
-**完成标准：** 计数器/触发器向量与参考模型（或手算）一致。
+**完成标准：** 更广 RTL 子集与参考模型一致。
 
 ### P3+ — 完整度
 

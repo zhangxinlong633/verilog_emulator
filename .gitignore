@@ -4,3 +4,8 @@
 *.a
 cmake-build-*/
 .worktrees/
+tools/vs-view/node_modules/
+tools/vs-view/dist/
+tools/vs-view/public/client.js
+tools/vs-view/public/client.js.map
+*.jsonl

@@ -11,6 +11,7 @@ list(PREPEND CMAKE_PREFIX_PATH
 
 find_package(BISON 3.0 REQUIRED)
 find_package(FLEX REQUIRED)
+find_package(Threads REQUIRED)
 
 message(STATUS "Bison: ${BISON_EXECUTABLE} (${BISON_VERSION})")
 message(STATUS "Flex: ${FLEX_EXECUTABLE}")
@@ -43,8 +44,14 @@ target_link_libraries(vs_front PUBLIC vs_util)
 target_include_directories(vs_front PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(vs_front PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+add_library(vs_elab STATIC src/elab/elab.c)
+target_link_libraries(vs_elab PUBLIC vs_front)
+
+add_library(vs_sim STATIC src/sim/sim.c)
+target_link_libraries(vs_sim PUBLIC vs_elab Threads::Threads)
+
 add_executable(vs src/main.c)
-target_link_libraries(vs PRIVATE vs_front)
+target_link_libraries(vs PRIVATE vs_sim)
 
 add_executable(test_util tests/util/test_util.c)
 target_link_libraries(test_util PRIVATE vs_util)
@@ -95,3 +102,10 @@ add_test(
     -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/fail/bad_assign.v
     -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/fail/bad_assign.diag.expected
     -P ${CMAKE_SOURCE_DIR}/tests/parse/run_fail.cmake)
+
+add_test(
+  NAME sim.counter.det
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/counter.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_det.cmake)

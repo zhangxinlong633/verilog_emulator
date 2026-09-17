@@ -1,7 +1,7 @@
 # Design: Minimal Multi-thread Sim + Trace + Node View
 
 **Date:** 2026-09-17  
-**Status:** Approved plan — implementing as P2-lite-MT  
+**Status:** P2-lite-MT implemented (MT sim + JSONL + TypeScript vs-view)  
 **Program:** `vs`
 
 ## Goals
@@ -43,7 +43,9 @@ vs run <file.v> [--threads N] [--until T] [--trace path.jsonl]
 | `src/sim/` | Values, scheduler, pool, trace |
 | `tools/vs-view/` | HTTP UI over JSONL |
 
-## Success
+## Node viewer (TypeScript)
 
-- CTest: threads 1 vs 4 same final watched values for counter.
-- Manual: Node UI shows `q` incrementing.
+- `tools/vs-view/` is **TypeScript** (server + browser client).
+- Build: `cd tools/vs-view && npm install && npm run build`
+- Run: `node dist/server.js --trace ../../build/trace.jsonl --port 8787`
+
