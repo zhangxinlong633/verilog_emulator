@@ -270,7 +270,20 @@ statement_list
     ;
 
 lvalue
-    : expr { $$ = $1; }
+    : IDENT
+        { $$ = vs_expr_ident_new(ctx->arena, loc_of(ctx, &@$), $1); }
+    | IDENT '[' expr ']'
+        {
+            $$ = vs_expr_select_new(ctx->arena, loc_of(ctx, &@$),
+                                    vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3);
+        }
+    | IDENT '[' expr ':' expr ']'
+        {
+            $$ = vs_expr_part_new(ctx->arena, loc_of(ctx, &@$),
+                                  vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3, $5);
+        }
+    | '{' expr_list '}'
+        { $$ = vs_expr_concat_new(ctx->arena, loc_of(ctx, &@$), $2); }
     ;
 
 expr

@@ -1,0 +1,10 @@
+design
+  module inv
+    port input a
+    port output y
+    assign
+      lhs
+        ident y
+      rhs
+        unary ~
+          ident a

@@ -1,7 +1,7 @@
 # Design: vs — Verilog Simulator
 
 **Date:** 2026-09-17  
-**Status:** Approved; P0 plan at `docs/superpowers/plans/2026-09-17-vs-p0-parser.md`  
+**Status:** P0 implementation in progress (frontend parse+AST usable)  
 **Program name:** `vs` (Verilog Simulator)
 
 ## 1. Goals

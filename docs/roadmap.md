@@ -7,14 +7,14 @@
 
 ### P0 — 解析与 AST（当前）
 
-- [ ] CMake + flex + bison 工程骨架
-- [ ] `vs` CLI：`--dump-ast`、`--dump-tokens`、`--help`、`--version`
-- [ ] arena / strtab / diag
-- [ ] v0.1 文法（见 `grammar-v0.1.md`）
-- [ ] AST dump + `tests/parse` 黄金用例
-- [ ] 文档（本目录）保持与实现同步
+- [x] CMake + flex + bison 工程骨架
+- [x] `vs` CLI：`--dump-ast`、`--dump-tokens`、`--help`、`--version`
+- [x] arena / strtab / diag
+- [x] v0.1 文法核心（见 `grammar-v0.1.md`；仍可扩展）
+- [x] AST dump + `tests/parse` 黄金用例（empty / inv / counter + fail）
+- [x] 文档（本目录）与实现同步中
 
-**完成标准：** `ctest` 全绿；能 parse 计数器示例并 dump AST。
+**完成标准：** `ctest` 全绿；能 parse 计数器示例并 dump AST。 — **已达到**
 
 ### P1 — Elaborate
 

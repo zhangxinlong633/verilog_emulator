@@ -63,3 +63,35 @@ add_test(
     -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/empty_module.v
     -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/empty_module.ast.expected
     -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
+  NAME parse.ok.inv
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/inv.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/inv.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
+  NAME parse.ok.counter
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/counter.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/counter.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
+  NAME parse.fail.missing_endmodule
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/fail/missing_endmodule.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/fail/missing_endmodule.diag.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_fail.cmake)
+
+add_test(
+  NAME parse.fail.bad_assign
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/fail/bad_assign.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/fail/bad_assign.diag.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_fail.cmake)

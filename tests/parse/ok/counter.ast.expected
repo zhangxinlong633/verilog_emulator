@@ -1,0 +1,29 @@
+design
+  module counter
+    port input clk
+    port input rst
+    port output q
+      range
+        number 3
+        number 0
+    always
+      event_control
+        edge posedge clk
+      block
+        if
+          cond
+            ident rst
+          then
+            nba
+              lhs
+                ident q
+              rhs
+                number 4'd0
+          else
+            nba
+              lhs
+                ident q
+              rhs
+                binary +
+                  ident q
+                  number 4'd1
