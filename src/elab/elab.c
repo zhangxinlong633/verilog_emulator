@@ -154,6 +154,20 @@ static int eval_const_expr(vs_diag_t *diag, const vs_param_env_t *env, const vs_
     }
 }
 
+static int range_bounds(vs_diag_t *diag, const vs_param_env_t *env, const vs_range_t *r, int *lo,
+                        int *hi) {
+    if (!r || !lo || !hi) {
+        return -1;
+    }
+    int64_t msb = 0, lsb = 0;
+    if (eval_const_expr(diag, env, r->msb, &msb) || eval_const_expr(diag, env, r->lsb, &lsb)) {
+        return -1;
+    }
+    *lo = (int)(msb < lsb ? msb : lsb);
+    *hi = (int)(msb > lsb ? msb : lsb);
+    return 0;
+}
+
 static int range_width(vs_diag_t *diag, const vs_param_env_t *env, const vs_range_t *r, int *out) {
     if (!out) {
         return -1;
@@ -162,16 +176,25 @@ static int range_width(vs_diag_t *diag, const vs_param_env_t *env, const vs_rang
         *out = 1;
         return 0;
     }
-    int64_t msb = 0, lsb = 0;
-    if (eval_const_expr(diag, env, r->msb, &msb) || eval_const_expr(diag, env, r->lsb, &lsb)) {
+    int lo = 0, hi = 0;
+    if (range_bounds(diag, env, r, &lo, &hi)) {
         return -1;
     }
-    *out = (msb >= lsb) ? (int)(msb - lsb + 1) : (int)(lsb - msb + 1);
+    *out = hi - lo + 1;
     if (*out <= 0) {
         vs_diag_error(diag, r->base.loc, "invalid packed range width");
         return -1;
     }
     return 0;
+}
+
+static const char *arena_elem_name(vs_arena_t *a, const char *base, int idx) {
+    char buf[128];
+    snprintf(buf, sizeof buf, "%s_%d", base, idx);
+    size_t n = strlen(buf) + 1;
+    char *s = vs_arena_alloc(a, n);
+    memcpy(s, buf, n);
+    return s;
 }
 
 static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, int width, int is_reg,
@@ -207,8 +230,61 @@ static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, i
     return s;
 }
 
+static int add_array1d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
+                       const char *base, vs_range_t *packed, vs_range_t *unpacked, int is_reg) {
+    int width = 0;
+    if (range_width(diag, env, packed, &width)) {
+        return -1;
+    }
+    int lo = 0, hi = 0;
+    if (range_bounds(diag, env, unpacked, &lo, &hi)) {
+        return -1;
+    }
+    int len = hi - lo + 1;
+    if (len <= 0) {
+        vs_diag_error(diag, unpacked->base.loc, "invalid unpacked array length");
+        return -1;
+    }
+
+    int first = nl->nsigs;
+    for (int i = lo; i <= hi; i++) {
+        const char *ename = arena_elem_name(a, base, i);
+        add_sig(a, nl, ename, width, is_reg, VS_DIR_NONE);
+    }
+
+    int ncap = nl->narrays + 1;
+    vs_array_t *na = vs_arena_alloc(a, (size_t)ncap * sizeof(vs_array_t));
+    if (nl->narrays > 0) {
+        memcpy(na, nl->arrays, (size_t)nl->narrays * sizeof(vs_array_t));
+    }
+    nl->arrays = na;
+    vs_array_t *arr = &nl->arrays[nl->narrays++];
+    arr->base = base;
+    arr->ndim = 1;
+    arr->lens[0] = len;
+    arr->lens[1] = 0;
+    arr->lo[0] = lo;
+    arr->lo[1] = 0;
+    arr->width = width;
+    arr->first_sig_index = first;
+    return 0;
+}
+
 static int add_names(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
-                     vs_expr_t *names, vs_range_t *range, int is_reg, vs_port_dir_t dir) {
+                     vs_expr_t *names, vs_range_t *range, vs_range_t *unpacked, int is_reg,
+                     vs_port_dir_t dir) {
+    if (unpacked) {
+        for (vs_expr_t *e = names; e; e = (vs_expr_t *)e->base.next) {
+            if (e->base.kind != VS_EXPR_IDENT) {
+                continue;
+            }
+            const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
+            if (add_array1d(a, diag, env, nl, id->name, range, unpacked, is_reg)) {
+                return -1;
+            }
+        }
+        return 0;
+    }
     int w = 0;
     if (range_width(diag, env, range, &w)) {
         return -1;
@@ -255,6 +331,43 @@ int vs_netlist_find_sig(const vs_netlist_t *nl, const char *name) {
     return -1;
 }
 
+const vs_array_t *vs_netlist_find_array(const vs_netlist_t *nl, const char *base) {
+    if (!nl || !base) {
+        return NULL;
+    }
+    for (int i = 0; i < nl->narrays; i++) {
+        if (strcmp(nl->arrays[i].base, base) == 0) {
+            return &nl->arrays[i];
+        }
+    }
+    return NULL;
+}
+
+int vs_netlist_find_param(const vs_netlist_t *nl, const char *name, int64_t *out) {
+    if (!nl || !name || !out) {
+        return -1;
+    }
+    for (int i = 0; i < nl->nparams; i++) {
+        if (strcmp(nl->params[i].name, name) == 0) {
+            *out = nl->params[i].value;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int vs_netlist_is_integer(const vs_netlist_t *nl, const char *name) {
+    if (!nl || !name) {
+        return 0;
+    }
+    for (int i = 0; i < nl->nintegers; i++) {
+        if (strcmp(nl->integers[i], name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int build_param_env(vs_arena_t *arena, vs_diag_t *diag, const vs_module_t *m,
                            vs_param_env_t *env) {
     memset(env, 0, sizeof(*env));
@@ -266,6 +379,35 @@ static int build_param_env(vs_arena_t *arena, vs_diag_t *diag, const vs_module_t
         if (param_env_add(arena, env, p->name, v)) {
             return -1;
         }
+    }
+    return 0;
+}
+
+static void copy_params_to_netlist(vs_arena_t *arena, vs_netlist_t *nl, const vs_param_env_t *env) {
+    if (!env || env->n <= 0) {
+        return;
+    }
+    nl->params = vs_arena_alloc(arena, (size_t)env->n * sizeof(vs_netlist_param_t));
+    nl->nparams = env->n;
+    for (int i = 0; i < env->n; i++) {
+        nl->params[i].name = env->items[i].name;
+        nl->params[i].value = env->items[i].value;
+    }
+}
+
+static int add_integer_names(vs_arena_t *a, vs_netlist_t *nl, vs_expr_t *names) {
+    for (vs_expr_t *e = names; e; e = (vs_expr_t *)e->base.next) {
+        if (e->base.kind != VS_EXPR_IDENT) {
+            continue;
+        }
+        const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
+        int ncap = nl->nintegers + 1;
+        const char **ni = vs_arena_alloc(a, (size_t)ncap * sizeof(const char *));
+        if (nl->nintegers > 0) {
+            memcpy(ni, nl->integers, (size_t)nl->nintegers * sizeof(const char *));
+        }
+        nl->integers = ni;
+        nl->integers[nl->nintegers++] = id->name;
     }
     return 0;
 }
@@ -284,8 +426,10 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
     }
 
     vs_netlist_t *nl = vs_arena_alloc(arena, sizeof(*nl));
+    memset(nl, 0, sizeof(*nl));
     nl->module_name = m->name;
     nl->annos = design->annos;
+    copy_params_to_netlist(arena, nl, &env);
 
     for (const vs_port_t *p = m->ports; p; p = (const vs_port_t *)p->base.next) {
         int is_reg = (p->dir == VS_DIR_OUTPUT);
@@ -300,21 +444,30 @@ vs_netlist_t *vs_elab_flat(vs_arena_t *arena, vs_diag_t *diag, const vs_design_t
         switch (it->base.kind) {
         case VS_PORT_DECL: {
             const vs_port_decl_t *d = (const vs_port_decl_t *)it;
-            if (add_names(arena, diag, &env, nl, d->names, d->range, 0, d->dir)) {
+            if (add_names(arena, diag, &env, nl, d->names, d->range, NULL, 0, d->dir)) {
                 return NULL;
             }
             break;
         }
         case VS_NET_DECL: {
             const vs_net_decl_t *d = (const vs_net_decl_t *)it;
-            if (add_names(arena, diag, &env, nl, d->names, d->range, 0, VS_DIR_NONE)) {
+            if (add_names(arena, diag, &env, nl, d->names, d->range, d->unpacked_dims, 0,
+                          VS_DIR_NONE)) {
                 return NULL;
             }
             break;
         }
         case VS_REG_DECL: {
             const vs_reg_decl_t *d = (const vs_reg_decl_t *)it;
-            if (add_names(arena, diag, &env, nl, d->names, d->range, 1, VS_DIR_NONE)) {
+            if (add_names(arena, diag, &env, nl, d->names, d->range, d->unpacked_dims, 1,
+                          VS_DIR_NONE)) {
+                return NULL;
+            }
+            break;
+        }
+        case VS_INTEGER_DECL: {
+            const vs_integer_decl_t *d = (const vs_integer_decl_t *)it;
+            if (add_integer_names(arena, nl, d->names)) {
                 return NULL;
             }
             break;
