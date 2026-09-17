@@ -171,13 +171,12 @@ static void dump_expr(FILE *out, const vs_expr_t *e, int depth) {
 }
 
 static void dump_range(FILE *out, const vs_range_t *r, int depth) {
-    if (!r) {
-        return;
+    for (const vs_range_t *cur = r; cur; cur = (const vs_range_t *)cur->base.next) {
+        dump_indent(out, depth);
+        fputs("range\n", out);
+        dump_expr(out, cur->msb, depth + 1);
+        dump_expr(out, cur->lsb, depth + 1);
     }
-    dump_indent(out, depth);
-    fputs("range\n", out);
-    dump_expr(out, r->msb, depth + 1);
-    dump_expr(out, r->lsb, depth + 1);
 }
 
 static void dump_event(FILE *out, const vs_node_t *n, int depth) {

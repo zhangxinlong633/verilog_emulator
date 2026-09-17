@@ -161,25 +161,51 @@ static int resolve_array_index(vs_sim_t *sim, const vs_expr_t *e, int *out_sig) 
     if (!e || e->base.kind != VS_EXPR_INDEX || !out_sig) {
         return -1;
     }
-    const vs_expr_index_t *ix = (const vs_expr_index_t *)e;
-    if (!ix->expr || ix->expr->base.kind != VS_EXPR_IDENT) {
+
+    /* Collect indices outermost-first from nested INDEX(..., idx) chain. */
+    int64_t idxs[2];
+    int nidx = 0;
+    const vs_expr_t *cur = e;
+    while (cur && cur->base.kind == VS_EXPR_INDEX && nidx < 2) {
+        const vs_expr_index_t *ix = (const vs_expr_index_t *)cur;
+        idxs[nidx++] = (int64_t)eval_expr(sim, ix->index);
+        cur = ix->expr;
+    }
+    if (!cur || cur->base.kind != VS_EXPR_IDENT) {
         return -1;
     }
-    const char *base = ((const vs_expr_ident_t *)ix->expr)->name;
+    const char *base = ((const vs_expr_ident_t *)cur)->name;
     const vs_array_t *arr = vs_netlist_find_array(sim->nl, base);
-    if (!arr || arr->ndim != 1) {
+    if (!arr || arr->ndim != nidx) {
         return -1;
     }
-    int64_t idx = (int64_t)eval_expr(sim, ix->index);
-    int lo = arr->lo[0];
-    int hi = lo + arr->lens[0] - 1;
-    if (idx < lo || idx > hi) {
-        vs_loc_t loc = e->base.loc;
-        vs_diag_error(sim->diag, loc, "array index %lld out of bounds for '%s' [%d:%d]",
-                      (long long)idx, base, lo, hi);
-        return -1;
+
+    /* idxs is outermost-first; reverse to dim0, dim1. */
+    int64_t dim_idx[2];
+    for (int d = 0; d < nidx; d++) {
+        dim_idx[d] = idxs[nidx - 1 - d];
     }
-    *out_sig = arr->first_sig_index + (int)(idx - lo);
+
+    int offset = 0;
+    for (int d = 0; d < nidx; d++) {
+        int lo = arr->lo[d];
+        int hi = lo + arr->lens[d] - 1;
+        if (dim_idx[d] < lo || dim_idx[d] > hi) {
+            vs_loc_t loc = e->base.loc;
+            vs_diag_error(sim->diag, loc, "array index %lld out of bounds for '%s' dim%d [%d:%d]",
+                          (long long)dim_idx[d], base, d, lo, hi);
+            return -1;
+        }
+        if (d == 0) {
+            offset = (int)(dim_idx[0] - lo);
+            if (nidx == 2) {
+                offset *= arr->lens[1];
+            }
+        } else {
+            offset += (int)(dim_idx[d] - lo);
+        }
+    }
+    *out_sig = arr->first_sig_index + offset;
     return 0;
 }
 

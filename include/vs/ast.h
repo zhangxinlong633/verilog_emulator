@@ -155,14 +155,14 @@ typedef struct vs_port_decl {
 typedef struct vs_net_decl {
     vs_node_t base;
     vs_range_t *range;         /* packed */
-    vs_range_t *unpacked_dims; /* 1D unpacked; NULL if scalar */
+    vs_range_t *unpacked_dims; /* linked ranges: 1D or 2D; NULL if scalar */
     vs_expr_t *names;
 } vs_net_decl_t;
 
 typedef struct vs_reg_decl {
     vs_node_t base;
     vs_range_t *range;         /* packed */
-    vs_range_t *unpacked_dims; /* 1D unpacked; NULL if scalar */
+    vs_range_t *unpacked_dims; /* linked ranges: 1D or 2D; NULL if scalar */
     vs_expr_t *names;
 } vs_reg_decl_t;
 

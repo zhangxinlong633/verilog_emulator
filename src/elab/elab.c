@@ -197,6 +197,15 @@ static const char *arena_elem_name(vs_arena_t *a, const char *base, int idx) {
     return s;
 }
 
+static const char *arena_elem_name2d(vs_arena_t *a, const char *base, int i, int j) {
+    char buf[160];
+    snprintf(buf, sizeof buf, "%s_%d_%d", base, i, j);
+    size_t n = strlen(buf) + 1;
+    char *s = vs_arena_alloc(a, n);
+    memcpy(s, buf, n);
+    return s;
+}
+
 static vs_signal_t *add_sig(vs_arena_t *a, vs_netlist_t *nl, const char *name, int width, int is_reg,
                             vs_port_dir_t dir) {
     for (int i = 0; i < nl->nsigs; i++) {
@@ -270,6 +279,67 @@ static int add_array1d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_n
     return 0;
 }
 
+static int add_array2d(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
+                       const char *base, vs_range_t *packed, vs_range_t *dim0, vs_range_t *dim1,
+                       int is_reg) {
+    int width = 0;
+    if (range_width(diag, env, packed, &width)) {
+        return -1;
+    }
+    int lo0 = 0, hi0 = 0, lo1 = 0, hi1 = 0;
+    if (range_bounds(diag, env, dim0, &lo0, &hi0) || range_bounds(diag, env, dim1, &lo1, &hi1)) {
+        return -1;
+    }
+    int rows = hi0 - lo0 + 1;
+    int cols = hi1 - lo1 + 1;
+    if (rows <= 0 || cols <= 0) {
+        vs_diag_error(diag, dim0->base.loc, "invalid 2D unpacked array length");
+        return -1;
+    }
+
+    int first = nl->nsigs;
+    for (int i = lo0; i <= hi0; i++) {
+        for (int j = lo1; j <= hi1; j++) {
+            const char *ename = arena_elem_name2d(a, base, i, j);
+            add_sig(a, nl, ename, width, is_reg, VS_DIR_NONE);
+        }
+    }
+
+    int ncap = nl->narrays + 1;
+    vs_array_t *na = vs_arena_alloc(a, (size_t)ncap * sizeof(vs_array_t));
+    if (nl->narrays > 0) {
+        memcpy(na, nl->arrays, (size_t)nl->narrays * sizeof(vs_array_t));
+    }
+    nl->arrays = na;
+    vs_array_t *arr = &nl->arrays[nl->narrays++];
+    arr->base = base;
+    arr->ndim = 2;
+    arr->lens[0] = rows;
+    arr->lens[1] = cols;
+    arr->lo[0] = lo0;
+    arr->lo[1] = lo1;
+    arr->width = width;
+    arr->first_sig_index = first;
+    return 0;
+}
+
+static int add_unpacked_array(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
+                              const char *base, vs_range_t *packed, vs_range_t *unpacked,
+                              int is_reg) {
+    if (!unpacked) {
+        return -1;
+    }
+    vs_range_t *dim1 = (vs_range_t *)unpacked->base.next;
+    if (!dim1) {
+        return add_array1d(a, diag, env, nl, base, packed, unpacked, is_reg);
+    }
+    if (dim1->base.next) {
+        vs_diag_error(diag, unpacked->base.loc, "arrays deeper than 2D are not supported");
+        return -1;
+    }
+    return add_array2d(a, diag, env, nl, base, packed, unpacked, dim1, is_reg);
+}
+
 static int add_names(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_netlist_t *nl,
                      vs_expr_t *names, vs_range_t *range, vs_range_t *unpacked, int is_reg,
                      vs_port_dir_t dir) {
@@ -279,7 +349,7 @@ static int add_names(vs_arena_t *a, vs_diag_t *diag, vs_param_env_t *env, vs_net
                 continue;
             }
             const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
-            if (add_array1d(a, diag, env, nl, id->name, range, unpacked, is_reg)) {
+            if (add_unpacked_array(a, diag, env, nl, id->name, range, unpacked, is_reg)) {
                 return -1;
             }
         }

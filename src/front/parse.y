@@ -74,7 +74,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %type <dir> port_dir
 %type <items> module_items
 %type <item> module_item
-%type <range> range_opt range
+%type <range> range_opt range unpacked_dims
 %type <expr> expr expr_list name_list lvalue
 %type <stmt> statement statement_list for_assign
 %type <node> event_control event_expr_list event_expr_term
@@ -202,7 +202,7 @@ module_item
         { $$ = (vs_item_t *)vs_port_decl_new(ctx->arena, loc_of(ctx, &@$), $1, $2, $3); }
     | K_WIRE range_opt name_list ';'
         { $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3, NULL); }
-    | K_WIRE range_opt IDENT range ';'
+    | K_WIRE range_opt IDENT unpacked_dims ';'
         {
             $$ = (vs_item_t *)vs_net_decl_new(ctx->arena, loc_of(ctx, &@$), $2,
                                               vs_expr_ident_new(ctx->arena, loc_of(ctx, &@3), $3),
@@ -210,7 +210,7 @@ module_item
         }
     | K_REG range_opt name_list ';'
         { $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2, $3, NULL); }
-    | K_REG range_opt IDENT range ';'
+    | K_REG range_opt IDENT unpacked_dims ';'
         {
             $$ = (vs_item_t *)vs_reg_decl_new(ctx->arena, loc_of(ctx, &@$), $2,
                                               vs_expr_ident_new(ctx->arena, loc_of(ctx, &@3), $3),
@@ -238,6 +238,15 @@ range_opt
 range
     : '[' expr ':' expr ']'
         { $$ = vs_range_new(ctx->arena, loc_of(ctx, &@$), $2, $4); }
+    ;
+
+unpacked_dims
+    : range { $$ = $1; }
+    | unpacked_dims range
+        {
+            vs_node_list_append((vs_node_t **)&$1, (vs_node_t *)$2);
+            $$ = $1;
+        }
     ;
 
 name_list
@@ -334,6 +343,12 @@ lvalue
         {
             $$ = vs_expr_index_new(ctx->arena, loc_of(ctx, &@$),
                                    vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3);
+        }
+    | IDENT '[' expr ']' '[' expr ']'
+        {
+            vs_expr_t *inner = vs_expr_index_new(ctx->arena, loc_of(ctx, &@$),
+                vs_expr_ident_new(ctx->arena, loc_of(ctx, &@1), $1), $3);
+            $$ = vs_expr_index_new(ctx->arena, loc_of(ctx, &@$), inner, $6);
         }
     | IDENT '[' expr ':' expr ']'
         {
