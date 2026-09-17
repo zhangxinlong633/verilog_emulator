@@ -107,19 +107,19 @@ add_test(
   NAME sim.counter.det
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
-    -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/counter.v
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/counter.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_det.cmake)
 
 add_test(
   NAME sim.sum_1_to_100
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
-    -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/sum_1_to_100.v
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/sum_1_to_100.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_sum100.cmake)
 
 add_test(
   NAME sim.matmul2x2
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
-    -DSRC=${CMAKE_SOURCE_DIR}/docs/examples/matmul2x2.v
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/matmul2x2.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_matmul.cmake)

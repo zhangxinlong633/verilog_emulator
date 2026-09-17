@@ -2,6 +2,8 @@
 
 本目录是 **vs（Verilog Simulator）** 的详细文档。实现以这些文档为准；源码头文件只保留简短 API 注释。
 
+可运行示例在仓库根 [`examples/`](../examples/)，不在本目录。代理约束见根目录 [`AGENTS.md`](../AGENTS.md) / [`CLAUDE.md`](../CLAUDE.md)。
+
 ## 从哪里读起
 
 | 你想了解… | 阅读 |
@@ -18,4 +20,4 @@
 
 ## 示例源码
 
-`docs/examples/` 下放置说明用的 `.v` 片段（与 `tests/parse` 黄金用例互补：前者重讲解，后者重回归）。
+可运行示例在仓库根目录 [`examples/`](../examples/)（与 `tests/parse` 黄金用例互补：前者重演示，后者重回归）。
