@@ -27,6 +27,15 @@
 cd tools/vs-view && npm run build && node dist/server.js --trace ../../build/trace_matmul.jsonl
 ```
 
+参数化 matmul（元素公开名 `base_i_j`）：
+
+```bash
+./build/vs run examples/matmul.v --threads 2 --until 40 \
+  --force a_0_0=1 --force a_0_1=2 --force a_1_0=3 --force a_1_1=4 \
+  --force b_0_0=5 --force b_0_1=6 --force b_1_0=7 --force b_1_1=8 \
+  --watch c_0_0,c_0_1,c_1_0,c_1_1
+```
+
 `// @vs` 注解（`view` / `op` / `expr`）会写入 trace `meta`，由 vs-view 在原始端口板下方渲染矩阵。详见 `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md`。
 
 新增示例时：放在本目录、更新本 README，并视需要加 `tests/sim` / CTest。

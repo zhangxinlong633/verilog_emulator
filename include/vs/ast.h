@@ -105,7 +105,7 @@ typedef struct vs_anno_set vs_anno_set_t;
 struct vs_design {
     vs_node_t base;
     vs_module_t *modules; /* linked via base.next cast */
-    const vs_anno_set_t *annos; /* optional // @vs metadata */
+    const vs_anno_set_t *annos; /* optional // @vs metadata; mutable via cast for resolve */
 };
 
 typedef struct vs_param_decl vs_param_decl_t;

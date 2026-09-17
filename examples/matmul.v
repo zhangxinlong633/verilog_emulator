@@ -4,6 +4,10 @@
 //   A=[[1,2],[3,4]] B=[[5,6],[7,8]] → C=[[19,22],[43,50]]
 //
 // Element public names: a_i_j, b_i_j, c_i_j (row-major).
+// @vs view matrix A array=a rows=N cols=K
+// @vs view matrix B array=b rows=K cols=M
+// @vs view matrix C array=c rows=N cols=M
+// @vs op matmul out=C left=A right=B
 module matmul #(
   parameter N = 2,
   parameter K = 2,

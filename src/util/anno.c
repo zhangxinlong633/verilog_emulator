@@ -2,6 +2,8 @@
 
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -55,15 +57,6 @@ static const char *next_token(const char **pp, vs_arena_t *a) {
     }
     *pp = p + n;
     return arena_dup_n(a, p, n);
-}
-
-static int kv_int(const char *tok, const char *key, int *out) {
-    size_t k = strlen(key);
-    if (strncmp(tok, key, k) != 0 || tok[k] != '=') {
-        return 0;
-    }
-    *out = (int)strtol(tok + k + 1, NULL, 10);
-    return 1;
 }
 
 static int kv_str(vs_arena_t *a, const char *tok, const char *key, const char **out) {
@@ -174,35 +167,144 @@ static void parse_view_matrix(vs_arena_t *a, vs_diag_t *diag, const char *path, 
     }
     int rows = 0, cols = 0;
     const char *cells = NULL;
+    const char *array_base = NULL;
+    const char *rows_ref = NULL;
+    const char *cols_ref = NULL;
     for (;;) {
         const char *tok = next_token(&p, a);
         if (!tok) {
             break;
         }
-        if (kv_int(tok, "rows", &rows)) {
+        if (starts_with(tok, "rows=")) {
+            const char *v = tok + 5;
+            char *end = NULL;
+            long n = strtol(v, &end, 10);
+            if (end && *end == '\0' && n > 0) {
+                rows = (int)n;
+                rows_ref = NULL;
+            } else if (*v) {
+                rows = 0;
+                rows_ref = arena_dup(a, v);
+            }
             continue;
         }
-        if (kv_int(tok, "cols", &cols)) {
+        if (starts_with(tok, "cols=")) {
+            const char *v = tok + 5;
+            char *end = NULL;
+            long n = strtol(v, &end, 10);
+            if (end && *end == '\0' && n > 0) {
+                cols = (int)n;
+                cols_ref = NULL;
+            } else if (*v) {
+                cols = 0;
+                cols_ref = arena_dup(a, v);
+            }
             continue;
         }
         if (starts_with(tok, "cells=")) {
             cells = arena_dup(a, tok + 6);
             continue;
         }
+        if (kv_str(a, tok, "array", &array_base)) {
+            continue;
+        }
         warn_line(diag, path, lineno, "bad @vs view matrix: unknown field");
         return;
     }
-    if (rows <= 0 || cols <= 0 || !cells) {
+    int have_rows = rows > 0 || rows_ref != NULL;
+    int have_cols = cols > 0 || cols_ref != NULL;
+    if (!have_rows || !have_cols || (!cells && !array_base)) {
         warn_line(diag, path, lineno, "bad @vs view matrix: incomplete");
         return;
     }
-    const char ***grid = NULL;
-    if (parse_cells(a, cells, rows, cols, &grid) != 0) {
-        warn_line(diag, path, lineno, "bad @vs view matrix: cells shape mismatch");
+    if (cells && array_base) {
+        warn_line(diag, path, lineno, "bad @vs view matrix: cells= and array= both set");
         return;
     }
-    vs_anno_matrix_t m = {.name = name, .rows = rows, .cols = cols, .cells = grid};
+    const char ***grid = NULL;
+    if (cells) {
+        if (rows <= 0 || cols <= 0) {
+            warn_line(diag, path, lineno, "bad @vs view matrix: cells= needs numeric rows/cols");
+            return;
+        }
+        if (parse_cells(a, cells, rows, cols, &grid) != 0) {
+            warn_line(diag, path, lineno, "bad @vs view matrix: cells shape mismatch");
+            return;
+        }
+    }
+    vs_anno_matrix_t m = {.name = name,
+                          .rows = rows,
+                          .cols = cols,
+                          .cells = grid,
+                          .array_base = array_base,
+                          .rows_ref = rows_ref,
+                          .cols_ref = cols_ref};
     (void)push_matrix(a, set, m);
+}
+
+static int resolve_dim(vs_diag_t *diag, int cur, const char *ref,
+                       int (*lookup)(void *ctx, const char *name, int64_t *out), void *ctx,
+                       int *out) {
+    if (cur > 0) {
+        *out = cur;
+        return 0;
+    }
+    if (!ref || !lookup) {
+        return -1;
+    }
+    int64_t v = 0;
+    if (lookup(ctx, ref, &v) != 0 || v <= 0 || v > 1024) {
+        vs_loc_t loc = {0};
+        vs_diag_warn(diag, loc, "bad @vs array dim '%s'", ref);
+        return -1;
+    }
+    *out = (int)v;
+    return 0;
+}
+
+static const char *elem_name_2d(vs_arena_t *a, const char *base, int i, int j) {
+    char buf[160];
+    snprintf(buf, sizeof buf, "%s_%d_%d", base, i, j);
+    return arena_dup(a, buf);
+}
+
+int vs_anno_resolve_params(vs_anno_set_t *set, vs_arena_t *arena, vs_diag_t *diag,
+                           int (*lookup)(void *ctx, const char *name, int64_t *out), void *ctx) {
+    if (!set || !arena) {
+        return -1;
+    }
+    for (int i = 0; i < set->nmatrices; i++) {
+        vs_anno_matrix_t *m = &set->matrices[i];
+        if (!m->array_base) {
+            continue;
+        }
+        int rows = 0, cols = 0;
+        if (resolve_dim(diag, m->rows, m->rows_ref, lookup, ctx, &rows) != 0 ||
+            resolve_dim(diag, m->cols, m->cols_ref, lookup, ctx, &cols) != 0) {
+            return -1;
+        }
+        const char ***grid = vs_arena_alloc(arena, (size_t)rows * sizeof(*grid));
+        if (!grid) {
+            return -1;
+        }
+        for (int r = 0; r < rows; r++) {
+            const char **crow = vs_arena_alloc(arena, (size_t)cols * sizeof(*crow));
+            if (!crow) {
+                return -1;
+            }
+            for (int c = 0; c < cols; c++) {
+                crow[c] = elem_name_2d(arena, m->array_base, r, c);
+                if (!crow[c]) {
+                    return -1;
+                }
+            }
+            grid[r] = crow;
+        }
+        m->rows = rows;
+        m->cols = cols;
+        m->cells = grid;
+    }
+    return 0;
 }
 
 static void parse_op(vs_arena_t *a, vs_diag_t *diag, const char *path, int lineno, const char *rest,
@@ -347,13 +449,23 @@ int vs_anno_append_meta_json(char *dst, size_t dstsz, size_t *off, const vs_anno
     if (!set || (set->nmatrices == 0 && set->nops == 0 && set->nexprs == 0)) {
         return 0;
     }
-    if (set->nmatrices > 0) {
+    int nviews = 0;
+    for (int i = 0; i < set->nmatrices; i++) {
+        if (set->matrices[i].cells && set->matrices[i].rows > 0 && set->matrices[i].cols > 0) {
+            nviews++;
+        }
+    }
+    if (nviews > 0) {
         if (append_fmt(dst, dstsz, off, ",\"views\":[") != 0) {
             return -1;
         }
+        int emitted = 0;
         for (int i = 0; i < set->nmatrices; i++) {
             const vs_anno_matrix_t *m = &set->matrices[i];
-            if (i > 0 && append_fmt(dst, dstsz, off, ",") != 0) {
+            if (!m->cells || m->rows <= 0 || m->cols <= 0) {
+                continue;
+            }
+            if (emitted > 0 && append_fmt(dst, dstsz, off, ",") != 0) {
                 return -1;
             }
             if (append_fmt(dst, dstsz, off,
@@ -383,6 +495,7 @@ int vs_anno_append_meta_json(char *dst, size_t dstsz, size_t *off, const vs_anno
             if (append_fmt(dst, dstsz, off, "]}") != 0) {
                 return -1;
             }
+            emitted++;
         }
         if (append_fmt(dst, dstsz, off, "]") != 0) {
             return -1;

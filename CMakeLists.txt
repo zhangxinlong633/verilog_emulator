@@ -162,6 +162,14 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_views.cmake)
 
 add_test(
+  NAME sim.meta_matmul
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/matmul.v
+    -DTRACE=${CMAKE_BINARY_DIR}/trace_meta_matmul.jsonl
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_meta_matmul.cmake)
+
+add_test(
   NAME sim.param_width
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>

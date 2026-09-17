@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #if defined(__APPLE__) || defined(__linux__)
 #include <unistd.h>
@@ -79,6 +80,10 @@ static int split_watch(vs_arena_t *a, const char *s, const char ***out, int *nou
     *out = arr;
     *nout = i;
     return 0;
+}
+
+static int anno_lookup_param(void *ctx, const char *name, int64_t *out) {
+    return vs_netlist_find_param((const vs_netlist_t *)ctx, name, out);
 }
 
 static int cmd_run(int argc, char **argv) {
@@ -216,6 +221,14 @@ static int cmd_run(int argc, char **argv) {
         vs_diag_print_all(diag, stderr);
         vs_arena_destroy(arena);
         return 1;
+    }
+    if (design->annos) {
+        vs_anno_set_t *annos = (vs_anno_set_t *)design->annos;
+        if (vs_anno_resolve_params(annos, arena, diag, anno_lookup_param, nl) != 0) {
+            vs_diag_print_all(diag, stderr);
+            /* continue: sim still useful without expanded views */
+        }
+        nl->annos = annos;
     }
 
     const char **watch = NULL;
