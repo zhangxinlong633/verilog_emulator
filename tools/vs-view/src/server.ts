@@ -72,7 +72,11 @@ function waveFromEvents(
   for (const s of signals) waves[s] = [];
   for (const e of events) {
     if (
-      (e.op === "commit" || e.op === "clock" || e.op === "reset" || e.op === "ba") &&
+      (e.op === "commit" ||
+        e.op === "clock" ||
+        e.op === "reset" ||
+        e.op === "ba" ||
+        e.op === "force") &&
       e.sig &&
       e.val !== undefined &&
       waves[e.sig]

@@ -48,6 +48,17 @@ cd tools/vs-view && npm run build
 node dist/server.js --trace ../../build/trace_alu4.jsonl --port 8787
 ```
 
+公式核对：ALU 里 `a=3,b=5,op=0` → `y = 3+5 = 8` 正确。
+
+累加 1…100（`sum = 5050`）：
+
+```bash
+./build/vs run docs/examples/sum_1_to_100.v --threads 4 --until 1200 \
+  --clock clk=10 --reset rst=20 --watch sum,i,done \
+  --trace build/trace_sum100.jsonl
+# 期望: sum=5050 i=101 done=1
+```
+
 ## 文档
 
 - [`docs/README.md`](docs/README.md)
