@@ -10,7 +10,7 @@
 | `combo_bus.v` | 组合多进多出 |
 | `sum_1_to_100.v` | 累加 1…100 → `sum=5050` |
 | `matmul2x2.v` | 2×2 矩阵乘（扁平端口）→ `[[19,22],[43,50]]`（含 `// @vs` 矩阵视图注解） |
-| `matmul.v` | 参数化矩阵乘（`parameter` + `for` + 2D unpacked；元素名 `a_i_j`） |
+| `matmul.v` | 参数化矩阵乘（`parameter` + `for` + 2D unpacked；元素名 `a_i_j`；`@vs array=`） |
 
 ```bash
 ./build/vs run examples/counter.v --threads 4 --until 200 \
@@ -36,6 +36,6 @@ cd tools/vs-view && npm run build && node dist/server.js --trace ../../build/tra
   --watch c_0_0,c_0_1,c_1_0,c_1_1
 ```
 
-`// @vs` 注解（`view` / `op` / `expr`）会写入 trace `meta`，由 vs-view 在原始端口板下方渲染矩阵。详见 `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md`。
+`// @vs` 注解（`view` / `op` / `expr`）会写入 trace `meta`，由 vs-view 在原始端口板下方渲染矩阵。`view matrix` 可用显式 `cells=`，或 `array=base rows=N cols=K`（参数名在 elab 后展开为 `base_i_j`）。详见 `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md` 与 `docs/superpowers/specs/2026-09-17-param-matmul-arrays-design.md`。
 
 新增示例时：放在本目录、更新本 README，并视需要加 `tests/sim` / CTest。

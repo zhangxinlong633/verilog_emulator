@@ -1,7 +1,7 @@
 # Design: Parameterized matrix multiply (parameter + for + arrays)
 
 Date: 2026-09-17  
-Status: approved  
+Status: implemented  
 Related: `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md`, `docs/grammar-v0.1.md`
 
 ## Goal

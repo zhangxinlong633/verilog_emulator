@@ -15,7 +15,7 @@
 | 阻塞 `=` / 非阻塞 `<=` | 是 | |
 | 边沿/电平事件控制 | 是 | |
 | `parameter` / `integer` / `for` | 是 | 见下文；无 `generate` |
-| 1D unpacked 数组 | 是 | 元素公开名为 `base_i` |
+| 1D / 2D unpacked 数组 | 是 | 元素公开名 `base_i` / `base_i_j`（十进制下标） |
 | 常用表达式 | 是 | |
 | 预处理 | **否** | |
 | `case` / `while` / task/function | **否** | |
@@ -89,7 +89,7 @@ param_port_item  ::= 'parameter'? id '=' const_expr
 
 port_list        ::= '(' port_list_items? ')'
 port_list_items  ::= port (',' port)*
-port             ::= port_direction? range? id
+port             ::= port_direction ('wire'|'reg')? range? id unpacked_dims?
 port_direction   ::= 'input' | 'output' | 'inout'
 
 module_item      ::= parameter_decl
@@ -107,11 +107,11 @@ parameter_decl   ::= 'parameter' id '=' const_expr ';'
 integer_decl     ::= 'integer' list_of_ids ';'
 port_decl        ::= port_direction range? list_of_ids ';'
 net_decl         ::= 'wire' range? list_of_ids ';'
-                   | 'wire' range? id unpacked_range ';'
+                   | 'wire' range? id unpacked_dims ';'
 reg_decl         ::= 'reg' range? list_of_ids ';'
-                   | 'reg' range? id unpacked_range ';'
+                   | 'reg' range? id unpacked_dims ';'
 range            ::= '[' const_expr ':' const_expr ']'
-unpacked_range   ::= range   /* 1D unpacked；elab 展开为 base_i 标量信号 */
+unpacked_dims    ::= range range?  /* 1D → base_i；2D → base_i_j（row-major） */
 /* const_expr (elab): number | parameter id | unary +/- | binary + - * / */
 
 
@@ -137,7 +137,8 @@ statement        ::= lvalue '=' expr ';'
                    | ';'
 
 lvalue           ::= id
-                   | id '[' expr ']'          /* 数组索引或位选；sim 按 array registry 区分 */
+                   | id '[' expr ']'                 /* 1D 索引或位选 */
+                   | id '[' expr ']' '[' expr ']'    /* 2D 数组索引 */
                    | id '[' expr ':' expr ']'
                    | '{' lvalue (',' lvalue)* '}'   // 可选：拼接左值可后开
 
@@ -147,7 +148,7 @@ expr             ::= primary
                    | '{' expr (',' expr)* '}'
 
 primary          ::= number | id
-                   | id '[' expr ']'
+                   | primary '[' expr ']'            /* 可链式：a[i][j] */
                    | id '[' expr ':' expr ']'
                    | '(' expr ')'
 ```
@@ -199,10 +200,11 @@ endmodule
 - `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed/unpacked range）
 - `case`/`casex`/`casez`
 - `while`/`repeat`/`forever`；`for` **已支持**（过程循环；迭代上限防护）
-- 2D unpacked 数组与 `generate`（见后续 phase）
+- unpacked 数组更深于 2D；`generate`（未做）
+- 1D/2D unpacked **已支持**（元素公开名 `base_i` / `base_i_j`；ANSI 端口可带 unpacked dims）
 - `task`/`function`
 - 指定块 `specify`、UDP、`tri*` 等网型
 - 属性 `(* ... *)`
 - SystemVerilog 全部
 
-需要扩展时，走 `contributing-syntax.md` 流程，并更新本文与测试。
+`// @vs view matrix` 支持显式 `cells=`，或 `array=base rows=N cols=K`（`rows`/`cols` 可为字面量或 parameter 名；elab 后展开为 `base_i_j`）。

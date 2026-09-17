@@ -23,6 +23,8 @@
 - [x] `--trace` JSONL、`--clock` / `--reset` / `--watch`、`-v`
 - [x] `tools/vs-view`（**TypeScript**）时间线 + 精简波形
 - [x] `// @vs` 注解 → meta `views`/`ops`/`exprs` + vs-view 矩阵 Typed views
+- [x] `parameter` / 过程 `for` / 1D·2D unpacked（元素名 `base_i` / `base_i_j`）+ `examples/matmul.v`
+- [x] `@vs array=` 视图按参数展开 cells
 - [x] 确定性测试：threads 1 vs 4 最终 watch 一致
 
 **完成标准：** counter 可 `vs run`；Node UI 可查看 trace。 — **已达到**
@@ -50,7 +52,7 @@
 1. `#delay`、时间轮细化
 2. VCD 导出
 3. `$display` / `$monitor` / `$finish`
-4. `case`、循环、`parameter`
+4. `case`、`generate`、更深数组等（`parameter`/`for`/1D·2D 已在 P2-lite）
 5. 简单预处理
 6. 更多网型、UDP、specify…
 7. （可选）加速路径；默认仍解释执行
