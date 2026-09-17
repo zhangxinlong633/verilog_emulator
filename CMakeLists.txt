@@ -167,3 +167,10 @@ add_test(
     -DVS=$<TARGET_FILE:vs>
     -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/for_fill.v
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_for_fill.cmake)
+
+add_test(
+  NAME sim.array2d_write
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/array2d_write.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_array2d_write.cmake)
