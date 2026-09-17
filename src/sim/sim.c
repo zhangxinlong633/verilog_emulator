@@ -24,6 +24,11 @@ typedef struct {
 } vs_pending_buf_t;
 
 typedef struct {
+    const char *name;
+    int64_t value;
+} vs_int_local_t;
+
+typedef struct {
     uint64_t *vals;
     uint64_t *prev;
     int *changed;
@@ -36,6 +41,9 @@ typedef struct {
     int verbose;
     uint64_t time;
     int delta;
+    vs_int_local_t *integers;
+    int nintegers;
+    vs_diag_t *diag;
 } vs_sim_t;
 
 typedef struct {
@@ -121,6 +129,60 @@ static int find_sig(vs_sim_t *sim, const char *name) {
 
 static uint64_t eval_expr(vs_sim_t *sim, const vs_expr_t *e);
 
+static int find_integer_slot(vs_sim_t *sim, const char *name) {
+    if (!sim || !name) {
+        return -1;
+    }
+    for (int i = 0; i < sim->nintegers; i++) {
+        if (strcmp(sim->integers[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int64_t lookup_ident_value(vs_sim_t *sim, const char *name) {
+    int si = find_sig(sim, name);
+    if (si >= 0) {
+        return (int64_t)sim->vals[si];
+    }
+    int ii = find_integer_slot(sim, name);
+    if (ii >= 0) {
+        return sim->integers[ii].value;
+    }
+    int64_t pv = 0;
+    if (vs_netlist_find_param(sim->nl, name, &pv) == 0) {
+        return pv;
+    }
+    return 0;
+}
+
+static int resolve_array_index(vs_sim_t *sim, const vs_expr_t *e, int *out_sig) {
+    if (!e || e->base.kind != VS_EXPR_INDEX || !out_sig) {
+        return -1;
+    }
+    const vs_expr_index_t *ix = (const vs_expr_index_t *)e;
+    if (!ix->expr || ix->expr->base.kind != VS_EXPR_IDENT) {
+        return -1;
+    }
+    const char *base = ((const vs_expr_ident_t *)ix->expr)->name;
+    const vs_array_t *arr = vs_netlist_find_array(sim->nl, base);
+    if (!arr || arr->ndim != 1) {
+        return -1;
+    }
+    int64_t idx = (int64_t)eval_expr(sim, ix->index);
+    int lo = arr->lo[0];
+    int hi = lo + arr->lens[0] - 1;
+    if (idx < lo || idx > hi) {
+        vs_loc_t loc = e->base.loc;
+        vs_diag_error(sim->diag, loc, "array index %lld out of bounds for '%s' [%d:%d]",
+                      (long long)idx, base, lo, hi);
+        return -1;
+    }
+    *out_sig = arr->first_sig_index + (int)(idx - lo);
+    return 0;
+}
+
 static uint64_t eval_expr(vs_sim_t *sim, const vs_expr_t *e) {
     if (!e) {
         return 0;
@@ -128,8 +190,7 @@ static uint64_t eval_expr(vs_sim_t *sim, const vs_expr_t *e) {
     switch (e->base.kind) {
     case VS_EXPR_IDENT: {
         const vs_expr_ident_t *id = (const vs_expr_ident_t *)e;
-        int si = find_sig(sim, id->name);
-        return si >= 0 ? sim->vals[si] : 0;
+        return (uint64_t)lookup_ident_value(sim, id->name);
     }
     case VS_EXPR_NUMBER: {
         const vs_expr_number_t *n = (const vs_expr_number_t *)e;
@@ -189,6 +250,17 @@ static uint64_t eval_expr(vs_sim_t *sim, const vs_expr_t *e) {
             return 0;
         }
     }
+    case VS_EXPR_INDEX: {
+        int sig = -1;
+        if (resolve_array_index(sim, e, &sig) == 0) {
+            return sim->vals[sig];
+        }
+        /* Fall back to bit select on a scalar signal/value. */
+        const vs_expr_index_t *s = (const vs_expr_index_t *)e;
+        uint64_t v = eval_expr(sim, s->expr);
+        uint64_t i = eval_expr(sim, s->index);
+        return (v >> i) & 1ULL;
+    }
     case VS_EXPR_SELECT: {
         const vs_expr_select_t *s = (const vs_expr_select_t *)e;
         uint64_t v = eval_expr(sim, s->expr);
@@ -216,6 +288,14 @@ static int lvalue_sig(vs_sim_t *sim, const vs_expr_t *e) {
     if (e->base.kind == VS_EXPR_IDENT) {
         return find_sig(sim, ((const vs_expr_ident_t *)e)->name);
     }
+    if (e->base.kind == VS_EXPR_INDEX) {
+        int sig = -1;
+        if (resolve_array_index(sim, e, &sig) == 0) {
+            return sig;
+        }
+        const vs_expr_t *base = ((const vs_expr_index_t *)e)->expr;
+        return lvalue_sig(sim, base);
+    }
     if (e->base.kind == VS_EXPR_SELECT || e->base.kind == VS_EXPR_PART) {
         /* For lite: only whole-signal NBA on ident; selects write whole for now */
         const vs_expr_t *base = e->base.kind == VS_EXPR_SELECT
@@ -224,6 +304,19 @@ static int lvalue_sig(vs_sim_t *sim, const vs_expr_t *e) {
         return lvalue_sig(sim, base);
     }
     return -1;
+}
+
+static int assign_integer(vs_sim_t *sim, const vs_expr_t *lhs, uint64_t val) {
+    if (!lhs || lhs->base.kind != VS_EXPR_IDENT) {
+        return 0;
+    }
+    const char *name = ((const vs_expr_ident_t *)lhs)->name;
+    int ii = find_integer_slot(sim, name);
+    if (ii < 0) {
+        return 0;
+    }
+    sim->integers[ii].value = (int64_t)val;
+    return 1;
 }
 
 static void pending_push(vs_pending_buf_t *buf, int sig, uint64_t val, int is_nba, int proc_id) {
@@ -261,10 +354,29 @@ static void exec_stmt(vs_sim_t *sim, int tid, int proc_id, const vs_stmt_t *st) 
         }
         break;
     }
+    case VS_FOR: {
+        const vs_for_t *f = (const vs_for_t *)st;
+        const int max_iters = 1 << 20;
+        int iters = 0;
+        exec_stmt(sim, tid, proc_id, f->init);
+        while (eval_expr(sim, f->cond)) {
+            if (++iters > max_iters) {
+                vs_diag_error(sim->diag, st->base.loc,
+                              "for loop exceeded %d iterations (possible infinite loop)", max_iters);
+                return;
+            }
+            exec_stmt(sim, tid, proc_id, f->body);
+            exec_stmt(sim, tid, proc_id, f->step);
+        }
+        break;
+    }
     case VS_NBA: {
         const vs_assign_stmt_t *a = (const vs_assign_stmt_t *)st;
-        int sig = lvalue_sig(sim, a->lhs);
         uint64_t val = eval_expr(sim, a->rhs);
+        if (assign_integer(sim, a->lhs, val)) {
+            break;
+        }
+        int sig = lvalue_sig(sim, a->lhs);
         if (sig >= 0) {
             val &= mask_w(sim->nl->sigs[sig].width);
             pending_push(buf, sig, val, 1, proc_id);
@@ -276,8 +388,11 @@ static void exec_stmt(vs_sim_t *sim, int tid, int proc_id, const vs_stmt_t *st) 
     }
     case VS_BLOCKING_ASSIGN: {
         const vs_assign_stmt_t *a = (const vs_assign_stmt_t *)st;
-        int sig = lvalue_sig(sim, a->lhs);
         uint64_t val = eval_expr(sim, a->rhs);
+        if (assign_integer(sim, a->lhs, val)) {
+            break;
+        }
+        int sig = lvalue_sig(sim, a->lhs);
         if (sig >= 0) {
             val &= mask_w(sim->nl->sigs[sig].width);
             pending_push(buf, sig, val, 0, proc_id);
@@ -590,6 +705,7 @@ int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_si
     vs_sim_t sim;
     memset(&sim, 0, sizeof sim);
     sim.nl = nl;
+    sim.diag = diag;
     sim.nsigs = nl->nsigs;
     sim.nthreads = opts->threads > 0 ? opts->threads : 1;
     if (sim.nthreads > VS_MAX_THREADS) {
@@ -600,6 +716,14 @@ int vs_sim_run(vs_arena_t *arena, vs_diag_t *diag, vs_netlist_t *nl, const vs_si
     sim.prev = vs_arena_alloc(arena, (size_t)sim.nsigs * sizeof(uint64_t));
     sim.changed = vs_arena_alloc(arena, (size_t)sim.nsigs * sizeof(int));
     sim.locals = vs_arena_alloc(arena, (size_t)sim.nthreads * sizeof(vs_pending_buf_t));
+    if (nl->nintegers > 0) {
+        sim.nintegers = nl->nintegers;
+        sim.integers = vs_arena_alloc(arena, (size_t)nl->nintegers * sizeof(vs_int_local_t));
+        for (int i = 0; i < nl->nintegers; i++) {
+            sim.integers[i].name = nl->integers[i];
+            sim.integers[i].value = 0;
+        }
+    }
     pthread_mutex_init(&sim.trace_mu, NULL);
 
     if (opts->trace_path) {

@@ -14,9 +14,11 @@
 | `begin`/`end`, `if`/`else` | 是 | |
 | 阻塞 `=` / 非阻塞 `<=` | 是 | |
 | 边沿/电平事件控制 | 是 | |
+| `parameter` / `integer` / `for` | 是 | 见下文；无 `generate` |
+| 1D unpacked 数组 | 是 | 元素公开名为 `base_i` |
 | 常用表达式 | 是 | |
 | 预处理 | **否** | |
-| `case` / 循环 / task/function | **否** | |
+| `case` / `while` / task/function | **否** | |
 | `#delay` | **否** | P3+ |
 | 系统任务执行 | **否** | 可后加解析 |
 
@@ -38,10 +40,11 @@
 module endmodule
 input output inout
 wire reg
+parameter integer
 assign
 always initial
 begin end
-if else
+if else for
 posedge negedge
 or              // 仅在事件列表中作为分隔语义；作为运算符另见表达式
 ```
@@ -90,6 +93,7 @@ port             ::= port_direction? range? id
 port_direction   ::= 'input' | 'output' | 'inout'
 
 module_item      ::= parameter_decl
+                   | integer_decl
                    | port_decl
                    | net_decl
                    | reg_decl
@@ -100,10 +104,14 @@ module_item      ::= parameter_decl
                    | module_instantiation    // 可选 stub
 
 parameter_decl   ::= 'parameter' id '=' const_expr ';'
+integer_decl     ::= 'integer' list_of_ids ';'
 port_decl        ::= port_direction range? list_of_ids ';'
 net_decl         ::= 'wire' range? list_of_ids ';'
+                   | 'wire' range? id unpacked_range ';'
 reg_decl         ::= 'reg' range? list_of_ids ';'
+                   | 'reg' range? id unpacked_range ';'
 range            ::= '[' const_expr ':' const_expr ']'
+unpacked_range   ::= range   /* 1D unpacked；elab 展开为 base_i 标量信号 */
 /* const_expr (elab): number | parameter id | unary +/- | binary + - * / */
 
 
@@ -124,11 +132,12 @@ statement        ::= lvalue '=' expr ';'
                    | lvalue '<=' expr ';'
                    | 'begin' statement* 'end'
                    | 'if' '(' expr ')' statement ('else' statement)?
+                   | 'for' '(' lvalue '=' expr ';' expr ';' lvalue '=' expr ')' statement
                    | event_control statement
                    | ';'
 
 lvalue           ::= id
-                   | id '[' expr ']'
+                   | id '[' expr ']'          /* 数组索引或位选；sim 按 array registry 区分 */
                    | id '[' expr ':' expr ']'
                    | '{' lvalue (',' lvalue)* '}'   // 可选：拼接左值可后开
 
@@ -187,10 +196,11 @@ endmodule
 ## 5. 明确非目标（v0.1）
 
 - 预处理与宏
-- `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed range）
+- `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed/unpacked range）
 - `case`/`casex`/`casez`
-- `for`/`while`/`repeat`/`forever`
-- `task`/`function`/`generate`
+- `while`/`repeat`/`forever`；`for` **已支持**（过程循环；迭代上限防护）
+- 2D unpacked 数组与 `generate`（见后续 phase）
+- `task`/`function`
 - 指定块 `specify`、UDP、`tri*` 等网型
 - 属性 `(* ... *)`
 - SystemVerilog 全部
