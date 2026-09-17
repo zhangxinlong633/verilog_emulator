@@ -86,6 +86,14 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
 
 add_test(
+  NAME parse.ok.param_width
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/param_width.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/param_width.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
   NAME parse.ok.counter
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
