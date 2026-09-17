@@ -16,6 +16,7 @@
 | 边沿/电平事件控制 | 是 | |
 | `parameter` / `integer` / `for` | 是 | 见下文；无 `generate` |
 | 1D / 2D unpacked 数组 | 是 | 元素公开名 `base_i` / `base_i_j`（十进制下标） |
+| 模块实例化（命名端口） | 是 | elab 展平；多文件 `vs run`；无位置端口 |
 | 常用表达式 | 是 | |
 | 预处理 | **否** | |
 | `case` / `while` / task/function | **否** | |
@@ -100,8 +101,15 @@ module_item      ::= parameter_decl
                    | cont_assign
                    | always_construct
                    | initial_construct
-                   | gate_instantiation      // 可选
-                   | module_instantiation    // 可选 stub
+                   | gate_instantiation      // 未实现
+                   | module_instantiation
+
+module_instantiation ::= id param_override? id '(' named_port_conn_list? ')' ';'
+param_override       ::= '#' '(' named_conn_list ')'
+named_conn_list      ::= named_conn (',' named_conn)*
+named_conn           ::= '.' id '(' expr ')'
+named_port_conn_list ::= named_conn_list
+/* v1: 仅命名端口；整数组连接用简单标识符；elab 展平为 netlist（inst_ 前缀） */
 
 parameter_decl   ::= 'parameter' id '=' const_expr ';'
 integer_decl     ::= 'integer' list_of_ids ';'
