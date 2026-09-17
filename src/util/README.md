@@ -1,3 +1,5 @@
 # src/util/
 
 基础设施：arena 分配、字符串表、诊断输出。无仿真语义。
+
+Also: `// @vs` annotation pre-scan (`anno.c`).

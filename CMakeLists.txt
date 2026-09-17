@@ -31,7 +31,8 @@ ADD_FLEX_BISON_DEPENDENCY(VsLex VsParse)
 add_library(vs_util STATIC
   src/util/arena.c
   src/util/strtab.c
-  src/util/diag.c)
+  src/util/diag.c
+  src/util/anno.c)
 target_include_directories(vs_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(vs_front STATIC
