@@ -15,6 +15,15 @@
 
 禁止把新示例写回 `docs/examples/`（该路径已废弃）。
 
+## Git 提交约定
+
+- **禁止 AI 署名**：commit message **不得**包含任何 AI / 代理工具的署名或 trailer，例如：
+  - `Co-authored-by: Cursor …` / `Co-authored-by: Claude …` / `Co-authored-by: Codex …`
+  - `Made-with: Cursor`、`Generated with Claude Code`、`Signed-off-by` 指向上述工具账号
+  - 正文或脚注里写 “via Cursor / Codex / Claude / Copilot / ChatGPT” 等工具署名
+- 提交作者与 committer 使用维护者本人身份；不要为代理单独挂名。
+- 改写历史或补提交时，同样遵守本条（不要把署名加回去）。
+
 ## README 约定
 
 - **每个有意义的目录**必须有 `README.md`（至少说明职责与关键入口）。

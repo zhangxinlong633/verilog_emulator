@@ -10,6 +10,7 @@
 4. **文档优先**：行为细节写在 `docs/`；`include/vs/*.h` 只保留简短 API 注释。
 5. **范围克制**：只改任务相关文件；除本约定要求的 README / 代理约束文件外，不主动堆 markdown。
 6. **Typed views**：业务语义用 `// @vs view|op|expr` 写在示例源码；C 预扫描进 `meta`，vs-view 渲染。不要把展示类型硬编码进 UI。数组元素公开名 `base_i` / `base_i_j`；`array=` 视图 elab 后展开。
+7. **禁止 AI 署名提交**：commit message 不要加 `Co-authored-by`（Cursor / Claude / Codex 等）、`Made-with`、`Generated with …` 或其它工具挂名；作者用维护者本人。详见 [`AGENTS.md`](AGENTS.md)「Git 提交约定」。
 
 ## 常用入口
 
