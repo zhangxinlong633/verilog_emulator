@@ -12,6 +12,7 @@
 | `matmul2x2.v` | 2×2 矩阵乘（扁平端口）→ `[[19,22],[43,50]]`（含 `// @vs` 矩阵视图注解） |
 | `matmul.v` | 参数化矩阵乘（`parameter` + `for` + 2D unpacked；元素名 `a_i_j`；`@vs array=`） |
 | `npu_transformer.v` | 玩具 NPU：时序 Transformer 层（硬注意力 + FFN/ReLU），实例化 `blas/`；默认 `Y=[[3,4],[3,4]]` |
+| `tiny_npu/` | 更丰富 Tiny NPU（T=D=4, HF=8）：端到端 + GEMM/MLP/Attn 拆分 demo；权重由 `tools/tiny_npu/gen_model.py` 生成 |
 | `blas/` | 组合 BLAS 叶子：`blas_gemm` / `blas_gemm_bt` / `blas_relu` / `blas_row_argmax` |
 
 ```bash
@@ -56,6 +57,18 @@ cd tools/vs-view && npm run build && node dist/server.js --trace ../../build/tra
   --trace build/trace_npu.jsonl
 # 期望: done=1  Y=[[3,4],[3,4]]
 cd tools/vs-view && npm run build && node dist/server.js --trace ../../build/trace_npu.jsonl
+```
+
+Tiny NPU（T=D=4, HF=8；权重已生成，建议 `--threads 1`）：
+
+```bash
+./build/vs run examples/tiny_npu/tiny_transformer.v examples/tiny_npu/weights.v \
+  examples/blas/gemm.v examples/blas/gemm_bt.v \
+  examples/blas/relu.v examples/blas/row_argmax.v \
+  --threads 1 --until 400 --clock clk=10 --reset rst=20 \
+  $(cat examples/tiny_npu/forces.txt | sed 's/^/--force /') \
+  --watch done,y_0_0,y_0_1,y_0_2,y_0_3
+# 期望: done=1  Y[0]=[17594,19180,17936,19999]
 ```
 
 `// @vs` 注解（`view` / `op` / `expr`）会写入 trace `meta`，由 vs-view 在原始端口板下方渲染矩阵。`view matrix` 可用显式 `cells=`，或 `array=base rows=N cols=K`（参数名在 elab 后展开为 `base_i_j`）。详见 `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md` 与 `docs/superpowers/specs/2026-09-17-param-matmul-arrays-design.md`；NPU 设计见 `docs/superpowers/specs/2026-09-17-npu-transformer-design.md`；BLAS 层次见 `docs/superpowers/specs/2026-09-17-npu-blas-hierarchy-design.md`。

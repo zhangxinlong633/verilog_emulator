@@ -177,6 +177,45 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_npu_transformer.cmake)
 
 add_test(
+  NAME sim.tiny_transformer
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/tiny_npu/tiny_transformer.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
+    -DTINY_DIR=${CMAKE_SOURCE_DIR}/examples/tiny_npu
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_tiny_transformer.cmake)
+
+add_test(
+  NAME sim.tiny_demo_gemm
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/tiny_npu/demo_gemm.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
+    -DEXPECT=${CMAKE_SOURCE_DIR}/examples/tiny_npu/expect_gemm.inc
+    -DWATCH=c_0_0,c_0_1,c_0_2,c_0_3,c_1_0,c_1_1,c_1_2,c_1_3,c_2_0,c_2_1,c_2_2,c_2_3,c_3_0,c_3_1,c_3_2,c_3_3
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_tiny_demo.cmake)
+
+add_test(
+  NAME sim.tiny_demo_mlp
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/tiny_npu/demo_mlp.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
+    -DEXPECT=${CMAKE_SOURCE_DIR}/examples/tiny_npu/expect_mlp.inc
+    -DWATCH=y_0_0,y_0_1,y_0_2,y_0_3,y_1_0,y_1_1,y_1_2,y_1_3,y_2_0,y_2_1,y_2_2,y_2_3,y_3_0,y_3_1,y_3_2,y_3_3
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_tiny_demo.cmake)
+
+add_test(
+  NAME sim.tiny_demo_attn
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/tiny_npu/demo_attn.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
+    -DEXPECT=${CMAKE_SOURCE_DIR}/examples/tiny_npu/expect_attn.inc
+    -DWATCH=o_0_0,o_0_1,o_0_2,o_0_3,o_1_0,o_1_1,o_1_2,o_1_3,o_2_0,o_2_1,o_2_2,o_2_3,o_3_0,o_3_1,o_3_2,o_3_3
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_tiny_demo.cmake)
+
+add_test(
   NAME sim.meta_npu
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>

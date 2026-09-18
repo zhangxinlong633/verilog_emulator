@@ -13,6 +13,7 @@
 | **硬件风格 GEMM** | 组合 `always @*` + `parameter`/`for`/2D 数组；`C=A·B` | [`examples/blas/gemm.v`](examples/blas/gemm.v)、[`examples/matmul.v`](examples/matmul.v) |
 | **BLAS 叶子库** | `gemm` / `gemm_bt` / `relu` / `row_argmax`，可被顶层实例化 | [`examples/blas/`](examples/blas/) |
 | **玩具 NPU** | 时序 FSM + 硬注意力 Transformer 层，多文件实例化 BLAS | [`examples/npu_transformer.v`](examples/npu_transformer.v) |
+| **Tiny NPU** | T=D=4 / HF=8 端到端 + GEMM/MLP/Attn 拆分 demo，固定种子权重 | [`examples/tiny_npu/`](examples/tiny_npu/) |
 | **模块实例化** | 命名端口、参数覆盖；elab 展平；`vs run a.v b.v…` | 见 [`docs/grammar-v0.1.md`](docs/grammar-v0.1.md) |
 | **vs-view** | 端口板 + 矩阵 Typed Views + 时间线 / 波形 | [`tools/vs-view`](tools/vs-view) |
 
@@ -33,6 +34,12 @@
 实例化 `u_q`/`u_k`/`u_v`（GEMM）、`u_s`（GEMMᵀ）、`u_a`（row argmax）、`u_relu` 等；跑完 `done=1`，`Y=[[3,4],[3,4]]`：
 
 ![NPU Transformer Typed Views](docs/images/npu-transformer-vs-view.png)
+
+### Tiny NPU（T=4, D=4, HF=8）
+
+固定种子量化权重 + 硬注意力；跑完 `done=1`，`Y` 四行同为 `[17594, 19180, 17936, 19999]`（拆分 demo 见 [`examples/tiny_npu/`](examples/tiny_npu/)）：
+
+![Tiny NPU Typed Views](docs/images/tiny-npu-vs-view.png)
 
 ## 依赖
 

@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define VS_MAX_PENDING 256
-#define VS_MAX_WAKE 64
+#define VS_MAX_PENDING 8192
+#define VS_MAX_WAKE 256
 #define VS_MAX_THREADS 16
 
 typedef struct {
