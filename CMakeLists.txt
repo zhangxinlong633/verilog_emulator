@@ -169,6 +169,24 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_blas_gemm.cmake)
 
 add_test(
+  NAME sim.fpga_gemm3
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm3_demo.v
+    -DFSM=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm3_fsm.v
+    -DMAC=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm4_mac_array.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_fpga_gemm3.cmake)
+
+add_test(
+  NAME sim.fpga_gemm8_tiled
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm8_tiled_demo.v
+    -DCTRL=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm8_tiled_ctrl.v
+    -DMAC=${CMAKE_SOURCE_DIR}/examples/fpga_gemm3/gemm4_mac_array.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_fpga_gemm8_tiled.cmake)
+
+add_test(
   NAME sim.npu_transformer
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>

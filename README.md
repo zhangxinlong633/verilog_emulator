@@ -15,6 +15,7 @@
 | **玩具 NPU** | 时序 FSM + 硬注意力 Transformer 层，多文件实例化 BLAS | [`examples/npu_transformer.v`](examples/npu_transformer.v) |
 | **Tiny NPU** | T=D=4 / HF=8 端到端 + GEMM/MLP/Attn 拆分 demo，固定种子权重 | [`examples/tiny_npu/`](examples/tiny_npu/) |
 | **GPT-2 × NPU tile** | Host 跑完整 GPT-2；`vs` 跑 layer0 `c_fc` 真实 int8 GEMM tile | [`examples/gpt2_npu/`](examples/gpt2_npu/) |
+| **ASIC 风格 GEMM** | 固定乘法器叶阵列 + 大矩阵分块；T≤32 可仿真，T=64 为产品定档纸面外推 | [`examples/fpga_gemm3/`](examples/fpga_gemm3/) |
 | **模块实例化** | 命名端口、参数覆盖；elab 展平；`vs run a.v b.v…` | 见 [`docs/grammar-v0.1.md`](docs/grammar-v0.1.md) |
 | **vs-view** | 端口板 + 矩阵 Typed Views + 时间线 / 波形 | [`tools/vs-view`](tools/vs-view) |
 
@@ -45,6 +46,10 @@
 ### GPT-2 × NPU GEMM tile
 
 完整 **GPT-2 (124M)** 在 Host（HuggingFace）前向；导出 layer0 `mlp.c_fc` 的真实激活/权重 tile（默认 4×32×32，对称 int8），在 `vs` 里用 `blas_gemm` 算 int32 结果并与 golden 对齐。详见 [`examples/gpt2_npu/`](examples/gpt2_npu/) 与 [`docs/superpowers/specs/2026-09-26-gpt2-npu-tile-design.md`](docs/superpowers/specs/2026-09-26-gpt2-npu-tile-design.md)。
+
+### ASIC 风格矩阵乘（`fpga_gemm3`）
+
+固定 **T×T** 叶乘法器集群 + 大矩阵 tiling（整 tile 并行总线）。仓库内 **T≤32 可 `vs` 仿真**；产品叙事定档 **T=64**（~12 亿管、die ≈ 2 cm²、理想下 1024² @1 GHz ≈ 17 µs）。详见 [`examples/fpga_gemm3/`](examples/fpga_gemm3/)。
 
 ## 依赖
 

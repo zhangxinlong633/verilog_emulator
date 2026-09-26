@@ -22,6 +22,7 @@
 | NPU + BLAS 模块实例化 | [superpowers/specs/2026-09-17-npu-blas-hierarchy-design.md](superpowers/specs/2026-09-17-npu-blas-hierarchy-design.md) |
 | 参数化 matmul（parameter/for/数组） | [superpowers/specs/2026-09-17-param-matmul-arrays-design.md](superpowers/specs/2026-09-17-param-matmul-arrays-design.md) |
 | vs-view 演示截图（GEMM / NPU） | [images/](images/) |
+| ASIC 风格矩阵乘（叶阵列 + tiling，T=64 定档） | [`examples/fpga_gemm3/`](../examples/fpga_gemm3/) |
 
 ## 演示重点
 
@@ -30,5 +31,6 @@
 1. **GEMM** — `examples/blas/gemm.v` / `examples/matmul.v`：组合矩阵乘，黄金 `[[19,22],[43,50]]`。
 2. **BLAS 叶子** — `gemm_bt`（Q·Kᵀ）、`relu`、`row_argmax`（硬注意力）。
 3. **玩具 NPU** — `examples/npu_transformer.v` 以模块实例化调用上述叶子；时钟 FSM 分 phase 锁存；黄金 `Y=[[3,4],[3,4]]`。
+4. **ASIC 风格 GEMM** — `examples/fpga_gemm3/`：固定乘法器叶 + 大矩阵分块；T≤32 可仿真，T=64 为产品定档纸面外推。
 
 界面截图见 [`images/`](images/)；命令行与说明见根 [`README.md`](../README.md)。

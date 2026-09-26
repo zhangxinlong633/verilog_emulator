@@ -14,6 +14,7 @@
 | `npu_transformer.v` | 玩具 NPU：时序 Transformer 层（硬注意力 + FFN/ReLU），实例化 `blas/`；默认 `Y=[[3,4],[3,4]]` |
 | `tiny_npu/` | 更丰富 Tiny NPU（T=D=4, HF=8）：端到端 + GEMM/MLP/Attn 拆分 demo；权重由 `tools/tiny_npu/gen_model.py` 生成 |
 | `gpt2_npu/` | Host 跑完整 GPT-2，RTL 跑 layer0 `mlp.c_fc` 真实 int8 tile（`tools/gpt2_npu/export_tile.py`） |
+| `fpga_gemm3/` | **ASIC 风格**矩阵乘：叶 MAC≤32 可仿真；分块至 1024；**T=64 产品定档**（纸面外推，含 die/成本量级） |
 | `blas/` | 组合 BLAS 叶子：`blas_gemm` / `blas_gemm_bt` / `blas_relu` / `blas_row_argmax` |
 
 ```bash
