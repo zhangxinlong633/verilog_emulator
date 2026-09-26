@@ -13,6 +13,7 @@
 | `matmul.v` | 参数化矩阵乘（`parameter` + `for` + 2D unpacked；元素名 `a_i_j`；`@vs array=`） |
 | `npu_transformer.v` | 玩具 NPU：时序 Transformer 层（硬注意力 + FFN/ReLU），实例化 `blas/`；默认 `Y=[[3,4],[3,4]]` |
 | `tiny_npu/` | 更丰富 Tiny NPU（T=D=4, HF=8）：端到端 + GEMM/MLP/Attn 拆分 demo；权重由 `tools/tiny_npu/gen_model.py` 生成 |
+| `gpt2_npu/` | Host 跑完整 GPT-2，RTL 跑 layer0 `mlp.c_fc` 真实 int8 tile（`tools/gpt2_npu/export_tile.py`） |
 | `blas/` | 组合 BLAS 叶子：`blas_gemm` / `blas_gemm_bt` / `blas_relu` / `blas_row_argmax` |
 
 ```bash
@@ -69,6 +70,14 @@ Tiny NPU（T=D=4, HF=8；权重已生成，建议 `--threads 1`）：
   $(cat examples/tiny_npu/forces.txt | sed 's/^/--force /') \
   --watch done,y_0_0,y_0_1,y_0_2,y_0_3
 # 期望: done=1  Y[0]=[17594,19180,17936,19999]
+```
+
+GPT-2 × NPU tile（Host 完整 GPT-2；RTL 只跑真实 `c_fc` tile）：
+
+```bash
+./build/vs run examples/gpt2_npu/gemm_tile.v examples/blas/gemm.v \
+  --threads 1 --until 40 --watch "$(cat examples/gpt2_npu/watch.txt)"
+# CTest: sim.gpt2_npu_gemm
 ```
 
 `// @vs` 注解（`view` / `op` / `expr`）会写入 trace `meta`，由 vs-view 在原始端口板下方渲染矩阵。`view matrix` 可用显式 `cells=`，或 `array=base rows=N cols=K`（参数名在 elab 后展开为 `base_i_j`）。详见 `docs/superpowers/specs/2026-09-17-typed-views-anno-design.md` 与 `docs/superpowers/specs/2026-09-17-param-matmul-arrays-design.md`；NPU 设计见 `docs/superpowers/specs/2026-09-17-npu-transformer-design.md`；BLAS 层次见 `docs/superpowers/specs/2026-09-17-npu-blas-hierarchy-design.md`。

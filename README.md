@@ -14,6 +14,7 @@
 | **BLAS 叶子库** | `gemm` / `gemm_bt` / `relu` / `row_argmax`，可被顶层实例化 | [`examples/blas/`](examples/blas/) |
 | **玩具 NPU** | 时序 FSM + 硬注意力 Transformer 层，多文件实例化 BLAS | [`examples/npu_transformer.v`](examples/npu_transformer.v) |
 | **Tiny NPU** | T=D=4 / HF=8 端到端 + GEMM/MLP/Attn 拆分 demo，固定种子权重 | [`examples/tiny_npu/`](examples/tiny_npu/) |
+| **GPT-2 × NPU tile** | Host 跑完整 GPT-2；`vs` 跑 layer0 `c_fc` 真实 int8 GEMM tile | [`examples/gpt2_npu/`](examples/gpt2_npu/) |
 | **模块实例化** | 命名端口、参数覆盖；elab 展平；`vs run a.v b.v…` | 见 [`docs/grammar-v0.1.md`](docs/grammar-v0.1.md) |
 | **vs-view** | 端口板 + 矩阵 Typed Views + 时间线 / 波形 | [`tools/vs-view`](tools/vs-view) |
 
@@ -40,6 +41,10 @@
 固定种子量化权重 + 硬注意力；跑完 `done=1`，`Y` 四行同为 `[17594, 19180, 17936, 19999]`（拆分 demo 见 [`examples/tiny_npu/`](examples/tiny_npu/)）：
 
 ![Tiny NPU Typed Views](docs/images/tiny-npu-vs-view.png)
+
+### GPT-2 × NPU GEMM tile
+
+完整 **GPT-2 (124M)** 在 Host（HuggingFace）前向；导出 layer0 `mlp.c_fc` 的真实激活/权重 tile（默认 4×32×32，对称 int8），在 `vs` 里用 `blas_gemm` 算 int32 结果并与 golden 对齐。详见 [`examples/gpt2_npu/`](examples/gpt2_npu/) 与 [`docs/superpowers/specs/2026-09-26-gpt2-npu-tile-design.md`](docs/superpowers/specs/2026-09-26-gpt2-npu-tile-design.md)。
 
 ## 依赖
 

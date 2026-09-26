@@ -216,6 +216,16 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_tiny_demo.cmake)
 
 add_test(
+  NAME sim.gpt2_npu_gemm
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/gpt2_npu/gemm_tile.v
+    -DBLAS_DIR=${CMAKE_SOURCE_DIR}/examples/blas
+    -DEXPECT=${CMAKE_SOURCE_DIR}/examples/gpt2_npu/expect_c.inc
+    -DWATCH_FILE=${CMAKE_SOURCE_DIR}/examples/gpt2_npu/watch.txt
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_gpt2_npu_gemm.cmake)
+
+add_test(
   NAME sim.meta_npu
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
