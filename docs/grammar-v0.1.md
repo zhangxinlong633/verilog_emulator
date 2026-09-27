@@ -14,7 +14,8 @@
 | `begin`/`end`, `if`/`else` | 是 | |
 | 阻塞 `=` / 非阻塞 `<=` | 是 | |
 | 边沿/电平事件控制 | 是 | |
-| `parameter` / `integer` / `for` | 是 | 见下文；无 `generate` |
+| `parameter` / `integer` / `for` | 是 | 见下文 |
+| `generate` `for` / `if` | 是 | `genvar` + `generate`/`endgenerate`；elab 展开。无 `generate case` |
 | 1D / 2D unpacked 数组 | 是 | 元素公开名 `base_i` / `base_i_j`（十进制下标） |
 | 模块实例化（命名端口） | 是 | elab 展平；多文件 `vs run`；无位置端口 |
 | 常用表达式 | 是 | |
@@ -42,6 +43,7 @@ module endmodule
 input output inout
 wire reg
 parameter integer
+genvar generate endgenerate
 assign
 always initial
 begin end
@@ -95,6 +97,8 @@ port_direction   ::= 'input' | 'output' | 'inout'
 
 module_item      ::= parameter_decl
                    | integer_decl
+                   | genvar_decl
+                   | generate_region
                    | port_decl
                    | net_decl
                    | reg_decl
@@ -113,6 +117,15 @@ named_port_conn_list ::= named_conn_list
 
 parameter_decl   ::= 'parameter' id '=' const_expr ';'
 integer_decl     ::= 'integer' list_of_ids ';'
+genvar_decl      ::= 'genvar' list_of_ids ';'
+generate_region  ::= 'generate' gen_item* 'endgenerate'
+gen_item         ::= module_item | gen_for | gen_if
+gen_for          ::= 'for' '(' genvar '=' const ';' const ';' genvar '=' const ')' gen_block
+gen_if           ::= 'if' '(' const ')' gen_block ( 'else' gen_block )?
+gen_block        ::= 'begin' ( ':' id )? gen_item* 'end'
+/* elab: genvar 循环展开为具体 assign/实例/声明。
+   带局部声明的块必须有标签；公开名 block_index_name（if 块为 block_name）。
+   单次 generate for 上限 65536 次。无 generate case。 */
 port_decl        ::= port_direction range? list_of_ids ';'
 net_decl         ::= 'wire' range? list_of_ids ';'
                    | 'wire' range? id unpacked_dims ';'
@@ -205,10 +218,11 @@ endmodule
 ## 5. 明确非目标（v0.1）
 
 - 预处理与宏
-- `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed/unpacked range）
-- `case`/`casex`/`casez`
-- `while`/`repeat`/`forever`；`for` **已支持**（过程循环；迭代上限防护）
-- unpacked 数组更深于 2D；`generate`（未做）
+- `localparam`；`parameter` **已支持**（模块头 `#(...)` 与 body `parameter`；elab 常量折叠进 packed/unpacked range）。`parameter` 不能写在 `generate` 内部
+- `case`/`casex`/`casez`（含 `generate case`）
+- `while`/`repeat`/`forever`；过程 `for` **已支持**（迭代上限防护）
+- unpacked 数组更深于 2D
+- `generate for` / `generate if` **已支持**（必须包在 `generate`/`endgenerate` 里；见上文）
 - 1D/2D unpacked **已支持**（元素公开名 `base_i` / `base_i_j`；ANSI 端口可带 unpacked dims）
 - `task`/`function`
 - 指定块 `specify`、UDP、`tri*` 等网型

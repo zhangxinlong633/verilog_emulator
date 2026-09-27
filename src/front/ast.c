@@ -143,6 +143,53 @@ vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name
     return d;
 }
 
+vs_genvar_decl_t *vs_genvar_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names) {
+    vs_genvar_decl_t *n = vs_node_alloc(a, sizeof(*n), VS_GENVAR_DECL, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->names = names;
+    return n;
+}
+
+vs_generate_t *vs_generate_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_item_t *items) {
+    vs_generate_t *n = vs_node_alloc(a, sizeof(*n), VS_GENERATE, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->name = name;
+    n->items = items;
+    return n;
+}
+
+vs_gen_for_t *vs_gen_for_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *init, vs_expr_t *cond,
+                             vs_stmt_t *step, const char *block_name, vs_item_t *items) {
+    vs_gen_for_t *n = vs_node_alloc(a, sizeof(*n), VS_GEN_FOR, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->init = init;
+    n->cond = cond;
+    n->step = step;
+    n->block_name = block_name;
+    n->items = items;
+    return n;
+}
+
+vs_gen_if_t *vs_gen_if_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *cond, const char *then_name,
+                           vs_item_t *then_items, const char *else_name, vs_item_t *else_items) {
+    vs_gen_if_t *n = vs_node_alloc(a, sizeof(*n), VS_GEN_IF, loc);
+    if (!n) {
+        return NULL;
+    }
+    n->cond = cond;
+    n->then_name = then_name;
+    n->then_items = then_items;
+    n->else_name = else_name;
+    n->else_items = else_items;
+    return n;
+}
+
 vs_integer_decl_t *vs_integer_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names) {
     vs_integer_decl_t *d = vs_node_alloc(a, sizeof(*d), VS_INTEGER_DECL, loc);
     if (!d) {

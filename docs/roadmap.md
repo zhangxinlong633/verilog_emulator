@@ -54,7 +54,7 @@
 1. `#delay`、时间轮细化
 2. VCD 导出
 3. `$display` / `$monitor` / `$finish`
-4. `case`、`generate`、更深数组等（`parameter`/`for`/1D·2D 已在 P2-lite）
+4. `case`、`generate case`、更深数组等（`parameter`/过程 `for`/1D·2D 已在 P2-lite；`generate for`/`if` 已在 elab 展开，见 `grammar-v0.1.md`）
 5. 简单预处理
 6. 更多网型、UDP、specify…
 7. （可选）加速路径；默认仍解释执行

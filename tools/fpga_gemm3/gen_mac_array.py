@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate structural N×N×N multiplier-cluster RTL (vs has no generate).
+"""Generate structural N×N×N multiplier-cluster RTL.
+
+Small designs can use generate-for (see examples/gen_mac2.v). This script keeps
+an explicit assign netlist so large N does not depend on the generate iteration cap.
 
 Each product is an explicit `assign` (= one multiplier).
 Module / file name: gemm{N}_mac_array

@@ -62,6 +62,9 @@
 "reg"                     { return K_REG; }
 "parameter"               { return K_PARAMETER; }
 "integer"                 { return K_INTEGER; }
+"genvar"                  { return K_GENVAR; }
+"generate"                { return K_GENERATE; }
+"endgenerate"             { return K_ENDGENERATE; }
 "assign"                  { return K_ASSIGN; }
 "always"                  { return K_ALWAYS; }
 "initial"                 { return K_INITIAL; }

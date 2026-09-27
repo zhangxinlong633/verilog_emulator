@@ -15,6 +15,10 @@ typedef enum vs_node_kind {
     VS_REG_DECL,
     VS_PARAM_DECL,
     VS_INTEGER_DECL,
+    VS_GENVAR_DECL,
+    VS_GENERATE,
+    VS_GEN_FOR,
+    VS_GEN_IF,
     VS_RANGE,
     VS_CONT_ASSIGN,
     VS_INSTANCE,
@@ -180,6 +184,36 @@ typedef struct vs_integer_decl {
     vs_expr_t *names; /* IDENT list */
 } vs_integer_decl_t;
 
+typedef struct vs_genvar_decl {
+    vs_node_t base;
+    vs_expr_t *names; /* IDENT list */
+} vs_genvar_decl_t;
+
+/* generate / endgenerate region. block name is NULL for the region itself. */
+typedef struct vs_generate {
+    vs_node_t base;
+    const char *name;
+    vs_item_t *items;
+} vs_generate_t;
+
+typedef struct vs_gen_for {
+    vs_node_t base;
+    vs_stmt_t *init;
+    vs_expr_t *cond;
+    vs_stmt_t *step;
+    const char *block_name; /* NULL if unlabeled */
+    vs_item_t *items;
+} vs_gen_for_t;
+
+typedef struct vs_gen_if {
+    vs_node_t base;
+    vs_expr_t *cond;
+    const char *then_name;
+    vs_item_t *then_items;
+    const char *else_name;
+    vs_item_t *else_items; /* NULL if no else */
+} vs_gen_if_t;
+
 typedef struct vs_cont_assign {
     vs_node_t base;
     vs_expr_t *lhs;
@@ -318,6 +352,12 @@ vs_reg_decl_t *vs_reg_decl_new(vs_arena_t *a, vs_loc_t loc, vs_range_t *range, v
                                vs_range_t *unpacked_dims);
 vs_param_decl_t *vs_param_decl_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *value);
 vs_integer_decl_t *vs_integer_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names);
+vs_genvar_decl_t *vs_genvar_decl_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *names);
+vs_generate_t *vs_generate_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_item_t *items);
+vs_gen_for_t *vs_gen_for_new(vs_arena_t *a, vs_loc_t loc, vs_stmt_t *init, vs_expr_t *cond,
+                             vs_stmt_t *step, const char *block_name, vs_item_t *items);
+vs_gen_if_t *vs_gen_if_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *cond, const char *then_name,
+                           vs_item_t *then_items, const char *else_name, vs_item_t *else_items);
 vs_cont_assign_t *vs_cont_assign_new(vs_arena_t *a, vs_loc_t loc, vs_expr_t *lhs, vs_expr_t *rhs);
 vs_named_conn_t *vs_named_conn_new(vs_arena_t *a, vs_loc_t loc, const char *name, vs_expr_t *expr);
 vs_instance_t *vs_instance_new(vs_arena_t *a, vs_loc_t loc, const char *mod_name, const char *inst_name,

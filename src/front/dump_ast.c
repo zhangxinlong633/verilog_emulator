@@ -352,6 +352,61 @@ static void dump_item(FILE *out, const vs_item_t *it, int depth) {
         dump_expr_list(out, d->names, depth + 1);
         break;
     }
+    case VS_GENVAR_DECL: {
+        const vs_genvar_decl_t *d = (const vs_genvar_decl_t *)it;
+        dump_indent(out, depth);
+        fputs("genvar_decl\n", out);
+        dump_expr_list(out, d->names, depth + 1);
+        break;
+    }
+    case VS_GENERATE: {
+        const vs_generate_t *g = (const vs_generate_t *)it;
+        dump_indent(out, depth);
+        fputs("generate\n", out);
+        for (const vs_item_t *p = g->items; p; p = (const vs_item_t *)p->base.next) {
+            dump_item(out, p, depth + 1);
+        }
+        break;
+    }
+    case VS_GEN_FOR: {
+        const vs_gen_for_t *g = (const vs_gen_for_t *)it;
+        dump_indent(out, depth);
+        fprintf(out, "gen_for %s\n", g->block_name ? g->block_name : "-");
+        dump_indent(out, depth + 1);
+        fputs("init\n", out);
+        dump_stmt(out, g->init, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("cond\n", out);
+        dump_expr(out, g->cond, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("step\n", out);
+        dump_stmt(out, g->step, depth + 2);
+        for (const vs_item_t *p = g->items; p; p = (const vs_item_t *)p->base.next) {
+            dump_item(out, p, depth + 1);
+        }
+        break;
+    }
+    case VS_GEN_IF: {
+        const vs_gen_if_t *g = (const vs_gen_if_t *)it;
+        dump_indent(out, depth);
+        fprintf(out, "gen_if %s\n", g->then_name ? g->then_name : "-");
+        dump_indent(out, depth + 1);
+        fputs("cond\n", out);
+        dump_expr(out, g->cond, depth + 2);
+        dump_indent(out, depth + 1);
+        fputs("then\n", out);
+        for (const vs_item_t *p = g->then_items; p; p = (const vs_item_t *)p->base.next) {
+            dump_item(out, p, depth + 2);
+        }
+        if (g->else_items || g->else_name) {
+            dump_indent(out, depth + 1);
+            fprintf(out, "else %s\n", g->else_name ? g->else_name : "-");
+            for (const vs_item_t *p = g->else_items; p; p = (const vs_item_t *)p->base.next) {
+                dump_item(out, p, depth + 2);
+            }
+        }
+        break;
+    }
     case VS_CONT_ASSIGN: {
         const vs_cont_assign_t *n = (const vs_cont_assign_t *)it;
         dump_indent(out, depth);

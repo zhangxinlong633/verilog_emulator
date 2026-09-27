@@ -62,7 +62,7 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %token <str> IDENT NUMBER
 %token K_MODULE K_ENDMODULE
 %token K_INPUT K_OUTPUT K_INOUT K_WIRE K_REG
-%token K_PARAMETER K_INTEGER
+%token K_PARAMETER K_INTEGER K_GENVAR K_GENERATE K_ENDGENERATE
 %token K_ASSIGN K_ALWAYS K_INITIAL K_BEGIN K_END
 %token K_IF K_ELSE K_FOR K_POSEDGE K_NEGEDGE K_OR
 %token LTEQ GTEQ EQEQ NEQ LAND LOR NAND NOR XNOR
@@ -72,8 +72,8 @@ static vs_loc_t loc_of(vs_parse_ctx_t *ctx, const VS_LTYPE *a) {
 %type <ports> port_list_opt port_list_items
 %type <port> port_item
 %type <dir> port_dir
-%type <items> module_items
-%type <item> module_item
+%type <items> module_items gen_item_list
+%type <item> module_item gen_item gen_block
 %type <range> range_opt range unpacked_dims
 %type <expr> expr expr_list name_list lvalue
 %type <stmt> statement statement_list for_assign
@@ -254,6 +254,53 @@ module_item
             $$ = (vs_item_t *)vs_instance_new(ctx->arena, loc_of(ctx, &@$), $1, $3,
                                              (vs_named_conn_t *)$2, NULL);
         }
+    | K_GENVAR name_list ';'
+        { $$ = (vs_item_t *)vs_genvar_decl_new(ctx->arena, loc_of(ctx, &@$), $2); }
+    | K_GENERATE gen_item_list K_ENDGENERATE
+        { $$ = (vs_item_t *)vs_generate_new(ctx->arena, loc_of(ctx, &@$), NULL, $2); }
+    ;
+
+gen_item_list
+    : /* empty */ { $$ = NULL; }
+    | gen_item_list gen_item
+        {
+            if (!$1) {
+                $$ = $2;
+            } else {
+                vs_node_list_append((vs_node_t **)&$1, (vs_node_t *)$2);
+                $$ = $1;
+            }
+        }
+    ;
+
+gen_item
+    : module_item { $$ = $1; }
+    | K_FOR '(' for_assign ';' expr ';' for_assign ')' gen_block
+        {
+            vs_generate_t *b = (vs_generate_t *)$9;
+            $$ = (vs_item_t *)vs_gen_for_new(ctx->arena, loc_of(ctx, &@$), $3, $5, $7,
+                                             b->name, b->items);
+        }
+    | K_IF '(' expr ')' gen_block
+        {
+            vs_generate_t *t = (vs_generate_t *)$5;
+            $$ = (vs_item_t *)vs_gen_if_new(ctx->arena, loc_of(ctx, &@$), $3, t->name, t->items,
+                                            NULL, NULL);
+        }
+    | K_IF '(' expr ')' gen_block K_ELSE gen_block
+        {
+            vs_generate_t *t = (vs_generate_t *)$5;
+            vs_generate_t *e = (vs_generate_t *)$7;
+            $$ = (vs_item_t *)vs_gen_if_new(ctx->arena, loc_of(ctx, &@$), $3, t->name, t->items,
+                                            e->name, e->items);
+        }
+    ;
+
+gen_block
+    : K_BEGIN gen_item_list K_END
+        { $$ = (vs_item_t *)vs_generate_new(ctx->arena, loc_of(ctx, &@$), NULL, $2); }
+    | K_BEGIN ':' IDENT gen_item_list K_END
+        { $$ = (vs_item_t *)vs_generate_new(ctx->arena, loc_of(ctx, &@$), $3, $4); }
     ;
 
 inst_param_override_opt

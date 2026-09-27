@@ -5,6 +5,7 @@
 #include "vs/diag.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 typedef struct vs_anno_matrix {

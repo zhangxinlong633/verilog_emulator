@@ -178,6 +178,35 @@ add_test(
     -P ${CMAKE_SOURCE_DIR}/tests/sim/run_fpga_gemm3.cmake)
 
 add_test(
+  NAME parse.ok.gen_for
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/parse/ok/gen_for.v
+    -DEXP=${CMAKE_SOURCE_DIR}/tests/parse/ok/gen_for.ast.expected
+    -P ${CMAKE_SOURCE_DIR}/tests/parse/run_ok.cmake)
+
+add_test(
+  NAME sim.gen_mac2
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/gen_mac2.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_gen_mac2.cmake)
+
+add_test(
+  NAME sim.gen_buf2
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/examples/gen_buf2.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_gen_buf2.cmake)
+
+add_test(
+  NAME sim.gen_nolabel
+  COMMAND ${CMAKE_COMMAND}
+    -DVS=$<TARGET_FILE:vs>
+    -DSRC=${CMAKE_SOURCE_DIR}/tests/sim/fixtures/gen_nolabel.v
+    -P ${CMAKE_SOURCE_DIR}/tests/sim/run_gen_nolabel.cmake)
+
+add_test(
   NAME sim.fpga_gemm8_tiled
   COMMAND ${CMAKE_COMMAND}
     -DVS=$<TARGET_FILE:vs>
