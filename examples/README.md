@@ -11,6 +11,8 @@
 | `sum_1_to_100.v` | 累加 1…100 → `sum=5050` |
 | `matmul2x2.v` | 2×2 矩阵乘（扁平端口）→ `[[19,22],[43,50]]`（含 `// @vs` 矩阵视图注解） |
 | `matmul.v` | 参数化矩阵乘（`parameter` + `for` + 2D unpacked；元素名 `a_i_j`；`@vs array=`） |
+| `gen_mac2.v` | `generate for` 展开的 2 点积（局部线 `g_0_p`）+ `generate if`；`y=39` |
+| `gen_buf2.v` | `generate for` 实例数组（每次迭代用局部线接到 `buf8`） |
 | `npu_transformer.v` | 玩具 NPU：时序 Transformer 层（硬注意力 + FFN/ReLU），实例化 `blas/`；默认 `Y=[[3,4],[3,4]]` |
 | `tiny_npu/` | 更丰富 Tiny NPU（T=D=4, HF=8）：端到端 + GEMM/MLP/Attn 拆分 demo；权重由 `tools/tiny_npu/gen_model.py` 生成 |
 | `gpt2_npu/` | Host 跑完整 GPT-2，RTL 跑 layer0 `mlp.c_fc` 真实 int8 tile（`tools/gpt2_npu/export_tile.py`） |

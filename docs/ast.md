@@ -65,6 +65,10 @@ dump 默认 **不打印** 位置（避免路径差异导致测试失败）；可
 | Kind | 字段 | 说明 |
 |------|------|------|
 | `VS_CONT_ASSIGN` | `lhs`, `rhs` | `assign` |
+| `VS_GENVAR_DECL` | `names` | `genvar` |
+| `VS_GENERATE` | `items` | `generate` / `endgenerate` |
+| `VS_GEN_FOR` | `init`, `cond`, `step`, `block_name`, `items` | generate `for`；dump 标签 `gen_for <label>` |
+| `VS_GEN_IF` | `cond`, then/else items + labels | generate `if`；dump 标签 `gen_if <then>` |
 | `VS_GATE_INST` | `gatetype`, `name?`, `terminals[]` | 可选 |
 | `VS_MODULE_INST` | `modname`, `instname`, `connections` | P0 可只保留名字与端口连接 AST |
 

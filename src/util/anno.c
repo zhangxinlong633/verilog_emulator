@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "vs/anno.h"
 
 #include <ctype.h>
